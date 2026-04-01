@@ -725,18 +725,26 @@ One thing to fix before next call:
         <p>In your Sheet, click <strong style="color:var(--text);">Extensions → Apps Script</strong>. Delete any existing code and paste the script below exactly.</p>
         <div class="code-block">function doGet(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  // Guard: if called with no parameters (e.g. browser test), return status
+  if (!e || !e.parameter) {
+    return ContentService
+      .createTextOutput(JSON.stringify({status: 'ok', message: 'Script is live'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   var p = e.parameter;
 
   if (p.action === 'append') {
     sheet.appendRow([
-      p.date,
-      p.prospect,
-      Number(p.confidence),
-      Number(p.objection),
-      Number(p.delivery),
-      p.tips,
-      p.strengths,
-      p.fix,
+      p.date || '',
+      p.prospect || '',
+      Number(p.confidence) || 0,
+      Number(p.objection) || 0,
+      Number(p.delivery) || 0,
+      p.tips || '',
+      p.strengths || '',
+      p.fix || '',
       new Date().toISOString()
     ]);
     return ContentService
@@ -744,7 +752,6 @@ One thing to fix before next call:
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // Default: return all rows
   var data = sheet.getDataRange().getValues();
   return ContentService
     .createTextOutput(JSON.stringify({rows: data}))
@@ -912,29 +919,40 @@ function clearInput() {
   pendingEntry = null;
 }
 
+function pingSheet(url, params) {
+  return new Promise((resolve) => {
+    const fullUrl = url + '?' + params.toString();
+    // Use an image ping — most reliable way to fire a GET to Apps Script from a static site
+    const img = new Image();
+    img.onload = img.onerror = () => resolve(true);
+    img.src = fullUrl;
+    // Also fire a fetch as backup
+    fetch(fullUrl, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+    // Resolve after 3s regardless
+    setTimeout(() => resolve(true), 3000);
+  });
+}
+
 async function saveEntry() {
   if (!pendingEntry) return;
   const entries = getEntries();
   entries.push(pendingEntry);
   saveEntries(entries);
 
-  // Google Sheets sync — GET with URL params avoids CORS preflight issues
   const url = getSheetUrl();
   if (url) {
-    try {
-      const params = new URLSearchParams({
-        action: 'append',
-        date: pendingEntry.date,
-        prospect: pendingEntry.prospect,
-        confidence: pendingEntry.confidence,
-        objection: pendingEntry.objection,
-        delivery: pendingEntry.delivery,
-        tips: (pendingEntry.tips || []).join(' | '),
-        strengths: (pendingEntry.strengths || []).join(' | '),
-        fix: pendingEntry.fix || ''
-      });
-      await fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
-    } catch(e) { console.warn('Sheets sync failed:', e); }
+    const params = new URLSearchParams({
+      action: 'append',
+      date: pendingEntry.date,
+      prospect: pendingEntry.prospect,
+      confidence: pendingEntry.confidence,
+      objection: pendingEntry.objection,
+      delivery: pendingEntry.delivery,
+      tips: (pendingEntry.tips || []).join(' | '),
+      strengths: (pendingEntry.strengths || []).join(' | '),
+      fix: pendingEntry.fix || ''
+    });
+    await pingSheet(url, params);
   }
 
   pendingEntry = null;
@@ -946,11 +964,15 @@ async function saveEntry() {
 async function testConnection() {
   const url = getSheetUrl();
   if (!url) { alert('Paste your Apps Script URL first.'); return; }
-  try {
-    const params = new URLSearchParams({action:'append',date:'TEST',prospect:'Connection Test',confidence:0,objection:0,delivery:0,tips:'',strengths:'',fix:''});
-    await fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
-    alert('Test row sent. Check your Google Sheet for a row with prospect = Connection Test to confirm it worked.');
-  } catch(e) { alert('Connection failed: ' + e.message); }
+  const params = new URLSearchParams({
+    action: 'append',
+    date: new Date().toISOString().slice(0,10),
+    prospect: 'Connection Test',
+    confidence: 0, objection: 0, delivery: 0,
+    tips: 'test', strengths: 'test', fix: 'test'
+  });
+  await pingSheet(url, params);
+  alert('Request fired. Check your Google Sheet now for a row with prospect = Connection Test. If it appears, you are connected.');
 }
 
 // ─── Alerts ─────────────────────────────────────────────────
