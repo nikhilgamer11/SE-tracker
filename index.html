@@ -5,723 +5,231 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SE Performance Tracker — Nikhil</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #080810;
-  --surface: #0f0f1a;
-  --surface2: #161625;
-  --surface3: #1e1e30;
-  --border: rgba(255,255,255,0.06);
-  --border2: rgba(255,255,255,0.11);
-  --accent: #5b5ef4;
-  --accent-dim: rgba(91,94,244,0.15);
-  --red: #f4635b;
-  --red-dim: rgba(244,99,91,0.15);
-  --green: #3dd68c;
-  --green-dim: rgba(61,214,140,0.12);
-  --amber: #f5a623;
-  --amber-dim: rgba(245,166,35,0.12);
-  --text: #e8e8f0;
-  --muted: #5a5a72;
-  --muted2: #8888a8;
-  --radius: 12px;
-  --font: 'Albert Sans', sans-serif;
-  --mono: 'JetBrains Mono', monospace;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 100vh;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 60% 40% at 20% 0%, rgba(91,94,244,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 80% 100%, rgba(61,214,140,0.04) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 0 24px 80px; }
-
-/* Header */
-header {
-  padding: 36px 0 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 32px;
-}
-
-.header-left { display: flex; flex-direction: column; gap: 4px; }
-
-.brand {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--accent);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-h1 {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
-}
-
-.header-sub {
-  font-size: 12px;
-  color: var(--muted2);
-  font-weight: 400;
-}
-
-.header-actions { display: flex; gap: 10px; align-items: center; }
-
-.setup-link {
-  font-size: 12px;
-  color: var(--muted2);
-  text-decoration: none;
-  font-family: var(--mono);
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border2);
-  transition: all 0.15s;
-  cursor: pointer;
-  background: none;
-}
-.setup-link:hover { color: var(--text); border-color: var(--muted2); }
-
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  border-radius: 8px;
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: #4a4de0; transform: translateY(-1px); }
-.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
-.btn-outline:hover { background: var(--surface2); }
-.btn-ghost { background: transparent; color: var(--muted2); font-size: 12px; padding: 6px 10px; }
-.btn-ghost:hover { color: var(--text); }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
-
-/* Nav */
-.nav {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 32px;
-  background: var(--surface);
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  width: fit-content;
-}
-.nav-tab {
-  padding: 7px 20px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--muted2);
-  font-family: var(--font);
-  transition: all 0.15s;
-}
-.nav-tab.active { background: var(--accent); color: #fff; }
-.nav-tab:hover:not(.active) { color: var(--text); background: var(--surface2); }
-
-/* Sections */
-.section { display: none; }
-.section.active { display: block; }
-
-/* Stat cards */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  margin-bottom: 28px;
-}
-@media (max-width: 900px) { .stats-row { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 560px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
-
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 16px;
-  position: relative;
-  overflow: hidden;
-}
-.stat-card::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-.stat-card.s-blue::after { background: var(--accent); }
-.stat-card.s-red::after { background: var(--red); }
-.stat-card.s-green::after { background: var(--green); }
-.stat-card.s-amber::after { background: var(--amber); }
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--text);
-}
-.stat-sub {
-  font-size: 11px;
-  color: var(--muted2);
-  margin-top: 5px;
-  font-weight: 400;
-}
-
-/* Charts grid */
-.charts-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.charts-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-@media (max-width: 768px) {
-  .charts-grid, .charts-grid-2 { grid-template-columns: 1fr; }
-}
-
-.chart-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-}
-.chart-head { margin-bottom: 16px; }
-.chart-title {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted2);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 2px;
-}
-.chart-desc { font-size: 11px; color: var(--muted); }
-.chart-wrap { position: relative; height: 200px; }
-.chart-wrap-tall { position: relative; height: 260px; }
-.radar-wrap { position: relative; height: 240px; }
-
-/* Radar controls */
-.radar-select {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 5px 10px;
-  outline: none;
-  cursor: pointer;
-  margin-top: 8px;
-}
-
-/* Word cloud */
-#wordcloud-canvas {
-  width: 100%;
-  height: 240px;
-  display: block;
-}
-
-/* Log table */
-.log-table-wrap {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  margin-bottom: 24px;
-}
-.log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.log-table th {
-  padding: 12px 14px;
-  text-align: left;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface2);
-  font-weight: 400;
-}
-.log-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  vertical-align: top;
-}
-.log-table tr:last-child td { border-bottom: none; }
-.log-table tr:hover td { background: var(--surface2); }
-
-.score-pill {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: var(--mono);
-}
-.s-high { background: var(--green-dim); color: var(--green); }
-.s-mid { background: var(--amber-dim); color: var(--amber); }
-.s-low { background: var(--red-dim); color: var(--red); }
-
-.session-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-family: var(--mono);
-  background: var(--accent-dim);
-  color: var(--accent);
-  margin-left: 6px;
-  font-weight: 400;
-}
-
-.del-btn {
-  background: none; border: none;
-  color: var(--muted); cursor: pointer;
-  font-size: 13px; padding: 2px 6px;
-  border-radius: 4px; transition: all 0.15s;
-}
-.del-btn:hover { color: var(--red); background: var(--red-dim); }
-
-/* Add entry */
-.paste-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-  margin-bottom: 20px;
-}
-.paste-card h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.paste-card p { font-size: 13px; color: var(--muted2); margin-bottom: 20px; line-height: 1.6; font-weight: 400; }
-
-.field-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.field-group { display: flex; flex-direction: column; gap: 5px; }
-.field-group label {
-  font-size: 10px; color: var(--muted);
-  font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em;
-}
-.field-group input, .field-group textarea {
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.field-group input:focus, .field-group textarea:focus { border-color: var(--accent); }
-.field-group input.wide { width: 320px; }
-.field-group input.narrow { width: 120px; }
-.field-group input.medium { width: 200px; }
-
-textarea.paste-area {
-  width: 100%;
-  min-height: 260px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  padding: 14px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.7;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.2s;
-}
-textarea.paste-area:focus { border-color: var(--accent); }
-
-.parse-actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
-
-/* Preview */
-.preview-card {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  padding: 22px;
-  margin-bottom: 20px;
-  display: none;
-}
-.preview-card h3 {
-  font-size: 11px; font-weight: 600; margin-bottom: 14px;
-  color: var(--accent); font-family: var(--mono);
-  text-transform: uppercase; letter-spacing: 0.1em;
-}
-.preview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px; margin-bottom: 14px;
-}
-.preview-field label {
-  display: block; font-size: 9px; color: var(--muted);
-  font-family: var(--mono); text-transform: uppercase;
-  letter-spacing: 0.1em; margin-bottom: 3px;
-}
-.preview-field span { font-size: 14px; font-weight: 600; }
-.preview-text {
-  background: var(--bg); border-radius: 7px;
-  padding: 12px 14px; font-size: 11px;
-  color: var(--muted2); line-height: 1.7;
-  font-family: var(--mono); margin-bottom: 10px;
-}
-.preview-text strong {
-  color: var(--text); display: block; margin-bottom: 3px;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
-}
-
-/* Alerts */
-.alert {
-  padding: 11px 14px; border-radius: 8px;
-  font-size: 13px; margin-bottom: 14px;
-  display: none; font-weight: 500;
-}
-.alert-success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(61,214,140,0.2); }
-.alert-error { background: var(--red-dim); color: var(--red); border: 1px solid rgba(244,99,91,0.2); }
-
-/* Setup modal */
-.modal-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  z-index: 100;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 20px;
-  overflow-y: auto;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 680px;
-  width: 100%;
-  position: relative;
-}
-.modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-.modal p { font-size: 13px; color: var(--muted2); margin-bottom: 24px; line-height: 1.6; font-weight: 400; }
-.modal-close {
-  position: absolute; top: 16px; right: 16px;
-  background: none; border: none; color: var(--muted2);
-  font-size: 18px; cursor: pointer; padding: 4px 8px;
-  border-radius: 6px; transition: all 0.15s;
-}
-.modal-close:hover { color: var(--text); background: var(--surface2); }
-
-.setup-step {
-  display: flex; gap: 16px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 18px; margin-bottom: 12px;
-}
-.step-num {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--accent); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; flex-shrink: 0;
-}
-.step-content h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-.step-content p { font-size: 12px; color: var(--muted2); margin-bottom: 8px; line-height: 1.6; }
-.code-block {
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 7px; padding: 12px 14px;
-  font-family: var(--mono); font-size: 10px;
-  color: var(--green); line-height: 1.8;
-  overflow-x: auto; white-space: pre;
-}
-
-/* Sheets URL bar */
-.sheets-bar {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 18px;
-  display: flex; gap: 10px; align-items: center;
-  flex-wrap: wrap; margin-bottom: 20px;
-}
-.sheets-bar label { font-size: 11px; color: var(--muted2); font-family: var(--mono); white-space: nowrap; }
-.sheets-bar input {
-  flex: 1; min-width: 200px;
-  background: var(--bg); border: 1px solid var(--border2);
-  border-radius: 7px; padding: 7px 12px;
-  color: var(--text); font-family: var(--mono); font-size: 11px;
-  outline: none; transition: border-color 0.2s;
-}
-.sheets-bar input:focus { border-color: var(--accent); }
-
-/* Empty state */
-.empty-state {
-  text-align: center; padding: 60px 20px; color: var(--muted);
-}
-.empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--muted2); }
-.empty-state p { font-size: 13px; line-height: 1.6; font-weight: 400; margin-bottom: 20px; }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+:root{--bg:#080810;--surface:#0f0f1a;--surface2:#16162a;--surface3:#1e1e35;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);--accent:#7c6dfa;--accent-dim:rgba(124,109,250,0.15);--red:#f56565;--red-dim:rgba(245,101,101,0.12);--green:#48bb78;--green-dim:rgba(72,187,120,0.12);--amber:#ed8936;--amber-dim:rgba(237,137,54,0.12);--text:#e8e8f0;--text2:#9090a8;--text3:#5a5a72;--r:12px;--r-lg:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(124,109,250,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 24px 80px}
+header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand-eyebrow{font-family:'Geist Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:4px}
+.brand h1{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;letter-spacing:-0.01em;line-height:1.2}
+.brand-sub{font-size:12px;color:var(--text3);font-weight:300;margin-top:3px}
+.header-actions{display:flex;gap:10px;align-items:center}
+.setup-link{font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'Geist',sans-serif;padding:6px 10px;border-radius:6px;transition:color .15s,background .15s;text-decoration:underline;text-underline-offset:3px}
+.setup-link:hover{color:var(--text2);background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#6a5ce8;transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-outline:hover{background:var(--surface2);color:var(--text)}
+.btn-ghost{background:transparent;color:var(--text3);font-size:12px;padding:6px 10px}.btn-ghost:hover{color:var(--text2)}
+.nav{display:flex;gap:2px;margin-bottom:32px;background:var(--surface);padding:4px;border-radius:10px;border:1px solid var(--border);width:fit-content}
+.nav-tab{padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:'Geist',sans-serif;transition:all .15s}
+.nav-tab.active{background:var(--accent);color:#fff}.nav-tab:hover:not(.active){color:var(--text);background:var(--surface2)}
+.section{display:none}.section.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card:hover{border-color:var(--border2)}
+.stat-accent{position:absolute;top:0;left:20px;width:32px;height:2px;border-radius:0 0 2px 2px}
+.sa-purple{background:var(--accent)}.sa-red{background:var(--red)}.sa-green{background:var(--green)}.sa-amber{background:var(--amber)}
+.stat-label{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.stat-value{font-family:'Instrument Serif',serif;font-size:38px;font-weight:400;line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:300}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px}
+.chart-card.full{grid-column:1/-1}
+.chart-label{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
+.chart-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:16px}
+.chart-wrap{position:relative;height:210px}.radar-wrap{position:relative;height:240px}
+.radar-controls{margin-bottom:10px}
+.radar-controls select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Geist Mono',monospace;font-size:11px;padding:5px 10px;outline:none;cursor:pointer;max-width:100%}
+#wordcloud-wrap{min-height:180px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:10px 0}
+.wc-word{display:inline-block;font-family:'Geist',sans-serif;font-weight:500;border-radius:4px;padding:2px 5px;cursor:default;transition:opacity .2s}
+.wc-word:hover{opacity:.65!important}
+.log-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.log-table{width:100%;border-collapse:collapse;font-size:13px}
+.log-table th{padding:12px 16px;text-align:left;font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2);font-weight:400}
+.log-table td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+.log-table tr:last-child td{border-bottom:none}.log-table tr:hover td{background:var(--surface2)}
+.series-badge{display:inline-flex;align-items:center;gap:4px;background:var(--accent-dim);color:var(--accent);font-size:10px;font-family:'Geist Mono',monospace;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.score-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:500;font-family:'Geist Mono',monospace}
+.score-high{background:var(--green-dim);color:var(--green)}.score-mid{background:var(--amber-dim);color:var(--amber)}.score-low{background:var(--red-dim);color:var(--red)}
+.del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:3px 7px;border-radius:5px;transition:all .15s}
+.del-btn:hover{color:var(--red);background:var(--red-dim)}
+.series-progress{display:flex;gap:3px;align-items:center}
+.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent)}.sp-dot.done{background:var(--accent)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(8,8,16,0.9);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px}
+.overlay.open{display:flex}
+.overlay-inner{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-lg);width:100%;max-width:680px;padding:32px;position:relative;margin:auto}
+.overlay-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:none;color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.overlay-close:hover{background:var(--surface3)}
+.overlay-inner h2{font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;margin-bottom:6px}
+.overlay-inner>p{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.6}
+.field-section{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:14px}
+.field-section h3{font-size:10px;font-weight:500;color:var(--text3);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);font-family:'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
+.field-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}.field-row:last-child{margin-bottom:0}
+.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}
+.field label{font-size:10px;color:var(--text3);font-family:'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+.field input,.field select{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Geist',sans-serif;font-size:13px;outline:none;transition:border-color .15s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--accent)}.field input::placeholder{color:var(--text3)}
+textarea{width:100%;min-height:200px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:14px;color:var(--text);font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.75;resize:vertical;outline:none;transition:border-color .15s}
+textarea:focus{border-color:var(--accent)}
+.sheets-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)}
+.sheets-row .field{flex:1;min-width:200px}
+.preview-card{background:var(--surface2);border:1px solid var(--accent);border-radius:var(--r-lg);padding:20px;margin-bottom:14px;display:none}
+.preview-card h3{font-size:10px;font-family:'Geist Mono',monospace;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.preview-grid{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}
+.pf label{display:block;font-size:10px;color:var(--text3);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.pf span{font-size:15px;font-weight:500}
+.preview-block{background:var(--surface);border-radius:8px;padding:10px 13px;font-size:11.5px;color:var(--text2);line-height:1.7;font-family:'Geist Mono',monospace;margin-bottom:8px}
+.preview-block strong{display:block;font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.alert{padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none;font-weight:500}
+.alert-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(72,187,120,.2)}
+.alert-error{background:var(--red-dim);color:var(--red);border:1px solid rgba(245,101,101,.2)}
+.empty{text-align:center;padding:70px 20px;color:var(--text3)}
+.empty-icon{font-size:36px;margin-bottom:14px}
+.empty h3{font-size:16px;font-weight:500;margin-bottom:6px;color:var(--text2)}
+.empty p{font-size:13px;line-height:1.6;font-weight:300}
+.setup-step{display:flex;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.setup-step:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px}
+.step-content h3{font-size:14px;font-weight:500;margin-bottom:5px}
+.step-content p{font-size:12.5px;color:var(--text2);line-height:1.65;font-weight:300}
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--green);margin-top:10px;line-height:1.8;overflow-x:auto;white-space:pre}
+@media(max-width:700px){.charts-grid{grid-template-columns:1fr}.chart-card.full{grid-column:1}.stats-row{grid-template-columns:repeat(2,1fr)}}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 </style>
 </head>
 <body>
-<div class="wrap">
-
-<!-- Header -->
+<div class="app">
 <header>
-  <div class="header-left">
-    <div class="brand">LearnUpon · SE Performance</div>
-    <h1>Demo Performance Tracker</h1>
-    <div class="header-sub">Nikhil · Senior Solutions Engineer · UK &amp; Ireland</div>
+  <div class="brand">
+    <div class="brand-eyebrow">LearnUpon · SE Performance</div>
+    <h1>Demo Tracker</h1>
+    <div class="brand-sub">Nikhil · Senior Solutions Engineer · UK &amp; Ireland</div>
   </div>
   <div class="header-actions">
     <button class="setup-link" onclick="openSetup()">Setup Guide</button>
-    <button class="btn btn-outline btn-sm" onclick="exportCSV()">↓ Export CSV</button>
-    <button class="btn btn-primary btn-sm" onclick="switchTab('add')">+ Add Entry</button>
+    <button class="btn btn-outline" onclick="exportCSV()">&#8595; Export CSV</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add Entry</button>
   </div>
 </header>
 
-<!-- Nav -->
 <nav class="nav">
   <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
   <button class="nav-tab" onclick="switchTab('log')">Call Log</button>
 </nav>
 
-<!-- DASHBOARD -->
 <div class="section active" id="tab-dashboard">
-
   <div class="stats-row">
-    <div class="stat-card s-blue">
-      <div class="stat-label">Total Calls</div>
-      <div class="stat-value" id="stat-calls">0</div>
-      <div class="stat-sub">logged demos</div>
-    </div>
-    <div class="stat-card s-blue">
-      <div class="stat-label">Avg Confidence</div>
-      <div class="stat-value" id="stat-confidence">—</div>
-      <div class="stat-sub" id="stat-confidence-trend">no data</div>
-    </div>
-    <div class="stat-card s-red">
-      <div class="stat-label">Avg Objection H.</div>
-      <div class="stat-value" id="stat-objection">—</div>
-      <div class="stat-sub" id="stat-objection-trend">no data</div>
-    </div>
-    <div class="stat-card s-green">
-      <div class="stat-label">Avg Delivery</div>
-      <div class="stat-value" id="stat-delivery">—</div>
-      <div class="stat-sub" id="stat-delivery-trend">no data</div>
-    </div>
-    <div class="stat-card s-amber">
-      <div class="stat-label">Last Call</div>
-      <div class="stat-value" style="font-size:16px;padding-top:6px;" id="stat-lastcall">—</div>
-      <div class="stat-sub" id="stat-lastprospect">no entries yet</div>
-    </div>
+    <div class="stat-card"><div class="stat-accent sa-purple"></div><div class="stat-label">Total Calls</div><div class="stat-value" id="stat-calls">0</div><div class="stat-sub">logged demos</div></div>
+    <div class="stat-card"><div class="stat-accent sa-purple"></div><div class="stat-label">Avg Confidence</div><div class="stat-value" id="stat-confidence">-</div><div class="stat-sub" id="stat-confidence-trend">no data</div></div>
+    <div class="stat-card"><div class="stat-accent sa-red"></div><div class="stat-label">Avg Objection H.</div><div class="stat-value" id="stat-objection">-</div><div class="stat-sub" id="stat-objection-trend">no data</div></div>
+    <div class="stat-card"><div class="stat-accent sa-green"></div><div class="stat-label">Avg Delivery</div><div class="stat-value" id="stat-delivery">-</div><div class="stat-sub" id="stat-delivery-trend">no data</div></div>
+    <div class="stat-card"><div class="stat-accent sa-amber"></div><div class="stat-label">Last Call</div><div class="stat-value" style="font-family:'Geist',sans-serif;font-size:15px;padding-top:8px;font-weight:500;" id="stat-lastcall">-</div><div class="stat-sub" id="stat-lastprospect">no entries</div></div>
   </div>
-
-  <div id="dashboard-empty" class="empty-state" style="display:none;">
-    <h3>No data yet</h3>
-    <p>Add your first entry by pasting the tracker block from your SE Coaching prompt.</p>
-    <button class="btn btn-primary" onclick="switchTab('add')">+ Add First Entry</button>
-  </div>
-
-  <div id="dashboard-charts">
+  <div id="dash-empty" class="empty" style="display:none;"><div class="empty-icon">&#128202;</div><h3>No data yet</h3><p>Add your first entry using the tracker block from your coaching prompt.</p><br><button class="btn btn-primary" onclick="openAddModal()">+ Add First Entry</button></div>
+  <div id="dash-charts">
     <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-head">
-          <div class="chart-title">Score Trends Over Time</div>
-          <div class="chart-desc">Confidence · Objection Handling · Delivery</div>
-        </div>
-        <div class="chart-wrap-tall"><canvas id="chartTrend"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-head" style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <div class="chart-title">Skill Radar</div>
-            <div class="chart-desc">Select any call to inspect</div>
-          </div>
-        </div>
-        <select class="radar-select" id="radarSelect" onchange="updateRadar()"></select>
-        <div class="radar-wrap"><canvas id="chartRadar"></canvas></div>
-      </div>
-    </div>
-
-    <div class="charts-grid-2">
-      <div class="chart-card">
-        <div class="chart-head">
-          <div class="chart-title">Score Distribution</div>
-          <div class="chart-desc">Average per metric across all calls</div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-head">
-          <div class="chart-title">Coaching Themes</div>
-          <div class="chart-desc">Most repeated themes from your tips</div>
-        </div>
-        <canvas id="wordcloud-canvas"></canvas>
-      </div>
+      <div class="chart-card full"><div class="chart-label">Over time</div><div class="chart-title">Score Trends</div><div class="chart-wrap"><canvas id="chartTrend"></canvas></div></div>
+      <div class="chart-card"><div class="chart-label">Skill breakdown</div><div class="chart-title">Call Radar</div><div class="radar-controls"><select id="radarSelect" onchange="updateRadar()"></select></div><div class="radar-wrap"><canvas id="chartRadar"></canvas></div></div>
+      <div class="chart-card"><div class="chart-label">All metrics</div><div class="chart-title">Score Distribution</div><div class="chart-wrap"><canvas id="chartBar"></canvas></div></div>
+      <div class="chart-card full"><div class="chart-label">Coaching intelligence</div><div class="chart-title">Recurring Themes</div><div id="wordcloud-wrap"></div></div>
     </div>
   </div>
 </div>
 
-<!-- CALL LOG -->
 <div class="section" id="tab-log">
-  <div id="log-empty" class="empty-state" style="display:none;">
-    <h3>No calls logged yet</h3>
-    <p>Switch to Add Entry and paste your tracker block.</p>
-  </div>
+  <div id="log-empty" class="empty" style="display:none;"><div class="empty-icon">&#128203;</div><h3>No calls logged</h3><p>Add your first entry to start tracking.</p></div>
   <div class="log-table-wrap" id="log-table-wrap">
     <table class="log-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Prospect</th>
-          <th>Session Note</th>
-          <th>Confidence</th>
-          <th>Objection H.</th>
-          <th>Delivery</th>
-          <th>Top Tip</th>
-          <th>Fix</th>
-          <th></th>
-        </tr>
-      </thead>
+      <thead><tr><th>Date</th><th>Prospect</th><th>Series</th><th>Session</th><th>Confidence</th><th>Objection H.</th><th>Delivery</th><th>Fix</th><th></th></tr></thead>
       <tbody id="log-tbody"></tbody>
     </table>
   </div>
 </div>
 
-<!-- ADD ENTRY -->
-<div class="section" id="tab-add">
-
-  <div class="sheets-bar">
-    <label>Google Sheets URL:</label>
-    <input type="text" id="sheetsUrl" placeholder="Paste your Apps Script Web App URL here" oninput="saveSheetUrl()">
-    <button class="btn btn-ghost" onclick="testConnection()">Test Connection</button>
-  </div>
-
-  <div class="paste-card">
-    <h2>Paste Tracker Block</h2>
-    <p>Copy the <strong style="color:var(--text);">Performance Tracker Input</strong> block from your SE Coaching prompt and paste below. Then add an optional session note if this is a multi-part or repeat demo.</p>
-
-    <div class="field-row">
-      <div class="field-group">
-        <label>Session Note (optional)</label>
-        <input type="text" class="medium" id="sessionNote" placeholder="e.g. Part 2, Technical audience">
-      </div>
+<div class="overlay" id="add-modal">
+  <div class="overlay-inner">
+    <button class="overlay-close" onclick="closeAddModal()">&#10005;</button>
+    <h2>Add Entry</h2>
+    <p>Paste the Performance Tracker Input block from your coaching output, or fill in manually.</p>
+    <div class="sheets-row">
+      <div class="field"><label>Google Sheets URL</label><input type="text" id="sheetsUrl" placeholder="Paste Apps Script Web App URL" oninput="saveSheetUrl()"></div>
+      <button class="btn btn-ghost" onclick="testConnection()">Test</button>
     </div>
-
-    <textarea class="paste-area" id="pasteInput" placeholder="=== TRACKER INPUT FORMAT ===
+    <div class="field-section">
+      <h3>Paste Tracker Block</h3>
+      <textarea id="pasteInput" placeholder="=== TRACKER INPUT FORMAT ===
 Call Date: 2026-04-01
 Prospect: Acme Corp
+Series Name: Acme Deal
+Session: 1
+Total Sessions: 3
 Confidence Score: 8
 Objection Handling Score: 7
 Overall Delivery Rating: 7
 
 Top 3 Coaching Tips:
 1. Anchor every feature to a specific pain before clicking
-2. Use silence after a value statement, let it land
-3. Ask a QBS implication question before moving to the next module
+2. Use silence after a value statement
+3. Ask a QBS implication question before moving on
 
 Strengths:
 - Strong product knowledge on reporting module
-- Good use of prospect language throughout
+- Good use of prospect language
 
 One thing to fix before next call:
 - Slow down after the aha moment"></textarea>
-
-    <div class="parse-actions">
-      <button class="btn btn-primary" onclick="parseInput()">Parse and Preview</button>
-      <button class="btn btn-ghost" onclick="clearInput()">Clear</button>
-      <span id="parse-status" style="font-size:11px;color:var(--muted);font-family:var(--mono);"></span>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
+        <button class="btn btn-outline" onclick="parseInput()">Parse and Preview</button>
+        <button class="btn btn-ghost" onclick="clearInput()">Clear</button>
+        <span id="parse-status" style="font-size:11px;color:var(--text3);font-family:'Geist Mono',monospace;"></span>
+      </div>
     </div>
-  </div>
-
-  <div class="alert alert-success" id="alert-success">Entry saved successfully.</div>
-  <div class="alert alert-error" id="alert-error">Could not parse. Check the format matches the tracker block.</div>
-
-  <div class="preview-card" id="preview-card">
-    <h3>Preview — confirm before saving</h3>
-    <div class="preview-grid" id="preview-grid"></div>
-    <div id="preview-extras"></div>
-    <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn btn-primary btn-sm" onclick="saveEntry()">Save Entry</button>
-      <button class="btn btn-ghost" onclick="cancelPreview()">Cancel</button>
+    <div class="field-section">
+      <h3>Or Fill Manually</h3>
+      <div class="field-row">
+        <div class="field"><label>Call Date</label><input type="date" id="m-date"></div>
+        <div class="field"><label>Prospect</label><input type="text" id="m-prospect" placeholder="e.g. Wayve"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Series Name</label><input type="text" id="m-series" placeholder="e.g. Wayve Deal (optional)"></div>
+        <div class="field"><label>Session</label><input type="number" id="m-session" placeholder="1" min="1"></div>
+        <div class="field"><label>Total Sessions</label><input type="number" id="m-total" placeholder="1" min="1"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Confidence (0-10)</label><input type="number" id="m-confidence" min="0" max="10" placeholder="8"></div>
+        <div class="field"><label>Objection H. (0-10)</label><input type="number" id="m-objection" min="0" max="10" placeholder="7"></div>
+        <div class="field"><label>Delivery (0-10)</label><input type="number" id="m-delivery" min="0" max="10" placeholder="7"></div>
+      </div>
+      <div class="field-row"><div class="field" style="flex:1 1 100%;"><label>Top Tips (one per line)</label><textarea id="m-tips" style="min-height:70px;" placeholder="Anchor features to pain&#10;Use silence after value statements"></textarea></div></div>
+      <div class="field-row"><div class="field" style="flex:1 1 100%;"><label>Strengths (one per line)</label><textarea id="m-strengths" style="min-height:60px;" placeholder="Strong product knowledge&#10;Good use of prospect language"></textarea></div></div>
+      <div class="field-row"><div class="field" style="flex:1 1 100%;"><label>One Thing to Fix</label><input type="text" id="m-fix" placeholder="Slow down after the aha moment"></div></div>
+      <button class="btn btn-outline" onclick="fillFromManual()" style="margin-top:8px;">Use Manual Entry</button>
+    </div>
+    <div class="alert alert-success" id="alert-success">Entry saved.</div>
+    <div class="alert alert-error" id="alert-error">Could not parse. Check the format matches the tracker block.</div>
+    <div class="preview-card" id="preview-card">
+      <h3>Preview - confirm before saving</h3>
+      <div class="preview-grid" id="preview-grid"></div>
+      <div id="preview-extras"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+        <button class="btn btn-ghost" onclick="cancelPreview()">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
 
-</div><!-- end wrap -->
-
-<!-- Setup Modal -->
-<div class="modal-overlay" id="setupModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeSetup()">✕</button>
+<div class="overlay" id="setup-modal">
+  <div class="overlay-inner">
+    <button class="overlay-close" onclick="closeSetup()">&#10005;</button>
     <h2>Setup Guide</h2>
-    <p>This app stores data in your browser. To also sync to Google Sheets so your manager can view entries, follow these steps.</p>
-
-    <div class="setup-step">
-      <div class="step-num">1</div>
-      <div class="step-content">
-        <h3>Create a Google Sheet</h3>
-        <p>Go to sheets.google.com, create a new sheet named SE Performance Tracker. Row 1 should have these headers:</p>
-        <div class="code-block">Date | Prospect | Session | Confidence | Objection | Delivery | Tips | Strengths | Fix | Timestamp</div>
-      </div>
-    </div>
-
-    <div class="setup-step">
-      <div class="step-num">2</div>
-      <div class="step-content">
-        <h3>Open Apps Script</h3>
-        <p>In your Sheet: Extensions → Apps Script. Delete all existing code and paste this exactly:</p>
-        <div class="code-block">function doGet(e) {
+    <p>The app stores data in your browser. To sync to Google Sheets and share with your manager, follow these steps.</p>
+    <div class="setup-step"><div class="step-num">1</div><div class="step-content"><h3>Create a Google Sheet</h3><p>Go to sheets.google.com and create a new sheet. Add this header row in row 1:</p><div class="code-block">Date | Prospect | Series | Session | TotalSessions | Confidence | Objection | Delivery | Tips | Strengths | Fix | Timestamp</div></div></div>
+    <div class="setup-step"><div class="step-num">2</div><div class="step-content"><h3>Open Apps Script and paste this code</h3><p>In your Sheet click Extensions then Apps Script. Delete all existing code and paste exactly:</p><div class="code-block">function doGet(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   if (!e || !e.parameter) {
     return ContentService
@@ -731,10 +239,11 @@ One thing to fix before next call:
   var p = e.parameter;
   if (p.action === 'append') {
     sheet.appendRow([
-      p.date||'', p.prospect||'', p.session||'',
+      p.date||'', p.prospect||'', p.series||'',
+      Number(p.session)||1, Number(p.total)||1,
       Number(p.confidence)||0, Number(p.objection)||0,
-      Number(p.delivery)||0, p.tips||'',
-      p.strengths||'', p.fix||'',
+      Number(p.delivery)||0,
+      p.tips||'', p.strengths||'', p.fix||'',
       new Date().toISOString()
     ]);
     return ContentService
@@ -745,447 +254,82 @@ One thing to fix before next call:
   return ContentService
     .createTextOutput(JSON.stringify({rows:data}))
     .setMimeType(ContentService.MimeType.JSON);
-}</div>
-      </div>
-    </div>
-
-    <div class="setup-step">
-      <div class="step-num">3</div>
-      <div class="step-content">
-        <h3>Deploy as Web App</h3>
-        <p>Click Deploy → New deployment → Web app. Execute as: Me. Who has access: Anyone. Copy the URL and paste it into the Google Sheets URL bar in Add Entry.</p>
-      </div>
-    </div>
-
-    <div class="setup-step">
-      <div class="step-num">4</div>
-      <div class="step-content">
-        <h3>Test it</h3>
-        <p>Paste the URL into Add Entry, hit Test Connection, then check your Sheet for a row with prospect = Connection Test.</p>
-      </div>
-    </div>
-
-    <div class="setup-step">
-      <div class="step-num">5</div>
-      <div class="step-content">
-        <h3>Host on GitHub Pages</h3>
-        <p>Upload index.html to a GitHub repo. Go to Settings → Pages → Branch: main → / (root). Your tracker will be live at yourusername.github.io/repo-name.</p>
-      </div>
-    </div>
+}</div></div></div>
+    <div class="setup-step"><div class="step-num">3</div><div class="step-content"><h3>Deploy as Web App</h3><p>Click Deploy, then New deployment, then Web app. Set Execute as: Me, Who has access: Anyone. Copy the URL and paste it in your browser. You should see <code style="color:var(--green);font-family:'Geist Mono',monospace;font-size:11px;">{"status":"ok","message":"Script is live"}</code> to confirm it works.</p></div></div>
+    <div class="setup-step"><div class="step-num">4</div><div class="step-content"><h3>Connect the app</h3><p>Click Add Entry and paste the Web App URL into the Google Sheets URL field. Hit Test to confirm a row appears in your Sheet.</p></div></div>
+    <div class="setup-step"><div class="step-num">5</div><div class="step-content"><h3>Host on GitHub Pages</h3><p>Upload index.html to a GitHub repository. Go to Settings, then Pages, then Branch: main, then / (root), then Save. Your tracker will be live at yourusername.github.io/repo-name within a minute.</p></div></div>
   </div>
 </div>
 
 <script>
-// Storage
-const STORE_KEY = 'se_tracker_v2';
-const SHEET_KEY = 'se_tracker_sheet_url';
-
-function getEntries() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
-  catch { return []; }
+const STORE_KEY='se_tracker_v2',SHEET_KEY='se_sheet_url';
+function getEntries(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||'[]')}catch{return[]}}
+function saveEntries(a){localStorage.setItem(STORE_KEY,JSON.stringify(a))}
+function getSheetUrl(){return localStorage.getItem(SHEET_KEY)||''}
+function saveSheetUrl(){localStorage.setItem(SHEET_KEY,document.getElementById('sheetsUrl').value.trim())}
+function switchTab(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.querySelectorAll('.nav-tab')[['dashboard','log'].indexOf(id)].classList.add('active');if(id==='dashboard')renderDashboard();if(id==='log')renderLog()}
+function openAddModal(){document.getElementById('add-modal').classList.add('open');const s=getSheetUrl();if(s)document.getElementById('sheetsUrl').value=s}
+function closeAddModal(){document.getElementById('add-modal').classList.remove('open')}
+function openSetup(){document.getElementById('setup-modal').classList.add('open')}
+function closeSetup(){document.getElementById('setup-modal').classList.remove('open')}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
+let pendingEntry=null;
+function parseTrackerBlock(text){
+  const get=(p,fb='')=>{const m=text.match(p);return m?m[1].trim():fb};
+  const date=get(/Call Date:\s*([^\n]+)/i),prospect=get(/Prospect:\s*([^\n]+)/i);
+  if(!date||!prospect)return null;
+  const series=get(/Series Name:\s*([^\n]+)/i,'');
+  const session=parseInt(get(/^Session:\s*([^\n]+)/im,'1'))||1;
+  const total=parseInt(get(/Total Sessions:\s*([^\n]+)/i,'1'))||1;
+  const confidence=parseFloat(get(/Confidence Score:\s*([^\n]+)/i))||0;
+  const objection=parseFloat(get(/Objection Handling Score:\s*([^\n]+)/i))||0;
+  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i))||0;
+  const tB=text.match(/Top 3 Coaching Tips:([\s\S]*?)(?:Strengths:|One thing to fix|$)/i);
+  const tips=tB?tB[1].split('\n').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
+  const sB=text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
+  const strengths=sB?sB[1].split('\n').map(l=>l.replace(/^\s*[-]\s*/,'').trim()).filter(Boolean):[];
+  const fix=get(/One thing to fix[^:]*:\s*[-]?\s*([^\n]+)/i);
+  return{date,prospect,series,session,total,confidence,objection,delivery,tips,strengths,fix,id:Date.now()}
 }
-function saveEntries(arr) { localStorage.setItem(STORE_KEY, JSON.stringify(arr)); }
-function getSheetUrl() { return localStorage.getItem(SHEET_KEY) || ''; }
-function saveSheetUrl() { localStorage.setItem(SHEET_KEY, document.getElementById('sheetsUrl').value.trim()); }
-
-// Tabs
-function switchTab(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  const tabs = ['dashboard','log'];
-  document.querySelectorAll('.nav-tab')[tabs.indexOf(id)].classList.add('active');
-  if (id === 'dashboard') renderDashboard();
-  if (id === 'log') renderLog();
-}
-
-// Setup modal
-function openSetup() { document.getElementById('setupModal').classList.add('open'); }
-function closeSetup() { document.getElementById('setupModal').classList.remove('open'); }
-document.getElementById('setupModal').addEventListener('click', function(e) {
-  if (e.target === this) closeSetup();
-});
-
-// Parse
-let pendingEntry = null;
-
-function parseInput() {
-  const raw = document.getElementById('pasteInput').value;
-  const session = document.getElementById('sessionNote').value.trim();
-  const entry = parseTrackerBlock(raw, session);
-  if (!entry) { showAlert('error'); document.getElementById('parse-status').textContent = 'Parse failed.'; return; }
-  pendingEntry = entry;
-  showPreview(entry);
-  document.getElementById('parse-status').textContent = 'Parsed OK.';
-}
-
-function parseTrackerBlock(text, session) {
-  const get = (p) => { const m = text.match(p); return m ? m[1].trim() : ''; };
-  const date = get(/Call Date:\s*([^\n]+)/i);
-  const prospect = get(/Prospect:\s*([^\n]+)/i);
-  const confidence = parseFloat(get(/Confidence Score:\s*([^\n]+)/i)) || 0;
-  const objection = parseFloat(get(/Objection Handling Score:\s*([^\n]+)/i)) || 0;
-  const delivery = parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i)) || 0;
-  if (!date || !prospect) return null;
-
-  const tipsBlock = text.match(/Top 3 Coaching Tips:([\s\S]*?)(?:Strengths:|One thing to fix|$)/i);
-  const tips = tipsBlock ? tipsBlock[1].replace(/^\s*\n/,'').split('\n')
-    .map(l => l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean) : [];
-
-  const strBlock = text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
-  const strengths = strBlock ? strBlock[1].split('\n')
-    .map(l => l.replace(/^\s*[-–]\s*/,'').trim()).filter(Boolean) : [];
-
-  const fix = get(/One thing to fix before next call:\s*[-–]?\s*([^\n]+)/i)
-    || get(/One thing to fix[^:]*:\s*[-–]?\s*([^\n]+)/i);
-
-  return { date, prospect, session: session || '', confidence, objection, delivery, tips, strengths, fix, id: Date.now() };
-}
-
-function showPreview(e) {
-  const card = document.getElementById('preview-card');
-  card.style.display = 'block';
-  document.getElementById('preview-grid').innerHTML = `
-    <div class="preview-field"><label>Date</label><span>${e.date}</span></div>
-    <div class="preview-field"><label>Prospect</label><span>${e.prospect}</span></div>
-    ${e.session ? `<div class="preview-field"><label>Session</label><span>${e.session}</span></div>` : ''}
-    <div class="preview-field"><label>Confidence</label><span class="score-pill ${sc(e.confidence)}">${e.confidence}/10</span></div>
-    <div class="preview-field"><label>Objection H.</label><span class="score-pill ${sc(e.objection)}">${e.objection}/10</span></div>
-    <div class="preview-field"><label>Delivery</label><span class="score-pill ${sc(e.delivery)}">${e.delivery}/10</span></div>
-  `;
-  let ex = '';
-  if (e.tips.length) ex += `<div class="preview-text"><strong>Tips</strong>${e.tips.map((t,i)=>`${i+1}. ${t}`).join('<br>')}</div>`;
-  if (e.strengths.length) ex += `<div class="preview-text"><strong>Strengths</strong>${e.strengths.map(s=>`· ${s}`).join('<br>')}</div>`;
-  if (e.fix) ex += `<div class="preview-text"><strong>One thing to fix</strong>${e.fix}</div>`;
-  document.getElementById('preview-extras').innerHTML = ex;
-}
-
-function cancelPreview() { document.getElementById('preview-card').style.display = 'none'; pendingEntry = null; }
-function clearInput() {
-  document.getElementById('pasteInput').value = '';
-  document.getElementById('sessionNote').value = '';
-  document.getElementById('preview-card').style.display = 'none';
-  document.getElementById('parse-status').textContent = '';
-  pendingEntry = null;
-}
-
-// Ping Google Sheets via image + fetch
-function pingSheet(url, params) {
-  return new Promise((resolve) => {
-    const fullUrl = url + '?' + params.toString();
-    const img = new Image();
-    img.onload = img.onerror = () => resolve(true);
-    img.src = fullUrl;
-    fetch(fullUrl, { method: 'GET', mode: 'no-cors' }).catch(() => {});
-    setTimeout(() => resolve(true), 3000);
-  });
-}
-
-async function saveEntry() {
-  if (!pendingEntry) return;
-  const entries = getEntries();
-  entries.push(pendingEntry);
-  saveEntries(entries);
-
-  const url = getSheetUrl();
-  if (url) {
-    const params = new URLSearchParams({
-      action: 'append',
-      date: pendingEntry.date,
-      prospect: pendingEntry.prospect,
-      session: pendingEntry.session || '',
-      confidence: pendingEntry.confidence,
-      objection: pendingEntry.objection,
-      delivery: pendingEntry.delivery,
-      tips: (pendingEntry.tips || []).join(' | '),
-      strengths: (pendingEntry.strengths || []).join(' | '),
-      fix: pendingEntry.fix || ''
-    });
-    await pingSheet(url, params);
-  }
-
-  pendingEntry = null;
-  document.getElementById('preview-card').style.display = 'none';
-  document.getElementById('pasteInput').value = '';
-  document.getElementById('sessionNote').value = '';
-  showAlert('success');
-}
-
-async function testConnection() {
-  const url = getSheetUrl();
-  if (!url) { alert('Paste your Apps Script URL first.'); return; }
-  const params = new URLSearchParams({
-    action: 'append', date: new Date().toISOString().slice(0,10),
-    prospect: 'Connection Test', session: 'test',
-    confidence: 0, objection: 0, delivery: 0,
-    tips: 'test', strengths: 'test', fix: 'test'
-  });
-  await pingSheet(url, params);
-  alert('Request fired. Check your Google Sheet for a row with prospect = Connection Test.');
-}
-
-function showAlert(type) {
-  const el = document.getElementById('alert-' + type);
-  el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 3000);
-}
-
-// Score helpers
-function sc(n) { return n >= 8 ? 's-high' : n >= 5 ? 's-mid' : 's-low'; }
-function avg(arr) {
-  if (!arr.length) return null;
-  return Math.round((arr.reduce((a,b) => a+b, 0) / arr.length) * 10) / 10;
-}
-function trendStr(entries, key) {
-  if (entries.length < 2) return 'not enough data';
-  const diff = Math.round((entries[entries.length-1][key] - entries[entries.length-2][key]) * 10) / 10;
-  return diff > 0 ? `↑ ${diff} from last call` : diff < 0 ? `↓ ${Math.abs(diff)} from last call` : 'same as last call';
-}
-
-// Charts
-let chartTrend, chartRadar, chartBar;
-
-function renderDashboard() {
-  const entries = getEntries().sort((a,b) => new Date(a.date)-new Date(b.date));
-
-  document.getElementById('stat-calls').textContent = entries.length;
-
-  if (!entries.length) {
-    document.getElementById('dashboard-empty').style.display = 'block';
-    document.getElementById('dashboard-charts').style.display = 'none';
-    return;
-  }
-
-  document.getElementById('dashboard-empty').style.display = 'none';
-  document.getElementById('dashboard-charts').style.display = 'block';
-
-  const last = entries[entries.length-1];
-  document.getElementById('stat-confidence').textContent = avg(entries.map(e=>e.confidence)) ?? '—';
-  document.getElementById('stat-objection').textContent = avg(entries.map(e=>e.objection)) ?? '—';
-  document.getElementById('stat-delivery').textContent = avg(entries.map(e=>e.delivery)) ?? '—';
-  document.getElementById('stat-confidence-trend').textContent = trendStr(entries,'confidence');
-  document.getElementById('stat-objection-trend').textContent = trendStr(entries,'objection');
-  document.getElementById('stat-delivery-trend').textContent = trendStr(entries,'delivery');
-  document.getElementById('stat-lastcall').textContent = last.date;
-  document.getElementById('stat-lastprospect').textContent = last.prospect + (last.session ? ' · ' + last.session : '');
-
-  const gc = 'rgba(255,255,255,0.05)';
-  const tc = '#5a5a72';
-
-  // Trend
-  if (chartTrend) chartTrend.destroy();
-  chartTrend = new Chart(document.getElementById('chartTrend'), {
-    type: 'line',
-    data: {
-      labels: entries.map(e => e.date.slice(5) + (e.session ? ' ('+e.session.slice(0,8)+')' : '')),
-      datasets: [
-        { label:'Confidence', data: entries.map(e=>e.confidence), borderColor:'#5b5ef4', backgroundColor:'rgba(91,94,244,0.08)', tension:0.4, fill:true, pointRadius:4 },
-        { label:'Objection H.', data: entries.map(e=>e.objection), borderColor:'#f4635b', backgroundColor:'transparent', tension:0.4, fill:false, pointRadius:4 },
-        { label:'Delivery', data: entries.map(e=>e.delivery), borderColor:'#3dd68c', backgroundColor:'transparent', tension:0.4, fill:false, pointRadius:4 }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:tc, font:{ family:'JetBrains Mono', size:10 }, boxWidth:10 } } },
-      scales:{
-        x:{ ticks:{ color:tc, font:{ family:'JetBrains Mono', size:9 }, maxRotation:45 }, grid:{ color:gc } },
-        y:{ min:0, max:10, ticks:{ color:tc, font:{ family:'JetBrains Mono', size:10 }, stepSize:2 }, grid:{ color:gc } }
-      }
-    }
-  });
-
-  // Radar — populate dropdown
-  const sel = document.getElementById('radarSelect');
-  sel.innerHTML = entries.map((e,i) =>
-    `<option value="${i}">${e.date} — ${e.prospect}${e.session?' ('+e.session+')':''}</option>`
-  ).join('');
-  sel.value = entries.length - 1;
-  buildRadar(entries[entries.length-1]);
-
-  // Bar
-  const confAvg = avg(entries.map(e=>e.confidence));
-  const objAvg = avg(entries.map(e=>e.objection));
-  const delAvg = avg(entries.map(e=>e.delivery));
-  if (chartBar) chartBar.destroy();
-  chartBar = new Chart(document.getElementById('chartBar'), {
-    type:'bar',
-    data:{
-      labels:['Confidence','Objection H.','Delivery'],
-      datasets:[{ data:[confAvg,objAvg,delAvg],
-        backgroundColor:['rgba(91,94,244,0.7)','rgba(244,99,91,0.7)','rgba(61,214,140,0.7)'],
-        borderRadius:6, borderSkipped:false }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{ ticks:{ color:tc, font:{ family:'JetBrains Mono', size:10 } }, grid:{ color:gc } },
-        y:{ min:0, max:10, ticks:{ color:tc, font:{ family:'JetBrains Mono', size:10 }, stepSize:2 }, grid:{ color:gc } }
-      }
-    }
-  });
-
-  // Word cloud
+function parseInput(){const e=parseTrackerBlock(document.getElementById('pasteInput').value);if(!e){showAlert('error');return}pendingEntry=e;showPreview(e);document.getElementById('parse-status').textContent='Parsed OK'}
+function fillFromManual(){const e={date:document.getElementById('m-date').value,prospect:document.getElementById('m-prospect').value.trim(),series:document.getElementById('m-series').value.trim(),session:parseInt(document.getElementById('m-session').value)||1,total:parseInt(document.getElementById('m-total').value)||1,confidence:parseFloat(document.getElementById('m-confidence').value)||0,objection:parseFloat(document.getElementById('m-objection').value)||0,delivery:parseFloat(document.getElementById('m-delivery').value)||0,tips:document.getElementById('m-tips').value.split('\n').map(l=>l.trim()).filter(Boolean),strengths:document.getElementById('m-strengths').value.split('\n').map(l=>l.trim()).filter(Boolean),fix:document.getElementById('m-fix').value.trim(),id:Date.now()};if(!e.date||!e.prospect){showAlert('error');return}pendingEntry=e;showPreview(e)}
+function showPreview(e){document.getElementById('preview-card').style.display='block';document.getElementById('preview-grid').innerHTML=`<div class="pf"><label>Date</label><span>${e.date}</span></div><div class="pf"><label>Prospect</label><span>${e.prospect}</span></div>${e.series?`<div class="pf"><label>Series</label><span>${e.series}</span></div><div class="pf"><label>Session</label><span>${e.session} of ${e.total}</span></div>`:''}<div class="pf"><label>Confidence</label><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}/10</span></div><div class="pf"><label>Objection H.</label><span class="score-pill ${scoreClass(e.objection)}">${e.objection}/10</span></div><div class="pf"><label>Delivery</label><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}/10</span></div>`;let ex='';if(e.tips.length)ex+=`<div class="preview-block"><strong>Tips</strong>${e.tips.map((t,i)=>`${i+1}. ${t}`).join('<br>')}</div>`;if(e.strengths.length)ex+=`<div class="preview-block"><strong>Strengths</strong>${e.strengths.map(s=>`- ${s}`).join('<br>')}</div>`;if(e.fix)ex+=`<div class="preview-block"><strong>One Thing to Fix</strong>${e.fix}</div>`;document.getElementById('preview-extras').innerHTML=ex}
+function cancelPreview(){document.getElementById('preview-card').style.display='none';pendingEntry=null}
+function clearInput(){document.getElementById('pasteInput').value='';document.getElementById('preview-card').style.display='none';document.getElementById('parse-status').textContent='';pendingEntry=null}
+function pingSheet(url,params){return new Promise(resolve=>{const full=url+'?'+params.toString();const img=new Image();img.onload=img.onerror=()=>resolve(true);img.src=full;fetch(full,{method:'GET',mode:'no-cors'}).catch(()=>{});setTimeout(()=>resolve(true),3000)})}
+async function saveEntry(){if(!pendingEntry)return;const entries=getEntries();entries.push(pendingEntry);saveEntries(entries);const url=getSheetUrl();if(url){const params=new URLSearchParams({action:'append',date:pendingEntry.date,prospect:pendingEntry.prospect,series:pendingEntry.series||'',session:pendingEntry.session||1,total:pendingEntry.total||1,confidence:pendingEntry.confidence,objection:pendingEntry.objection,delivery:pendingEntry.delivery,tips:(pendingEntry.tips||[]).join(' | '),strengths:(pendingEntry.strengths||[]).join(' | '),fix:pendingEntry.fix||''});await pingSheet(url,params)}pendingEntry=null;document.getElementById('preview-card').style.display='none';document.getElementById('pasteInput').value='';showAlert('success');setTimeout(()=>{closeAddModal();renderDashboard()},1200)}
+async function testConnection(){const url=getSheetUrl();if(!url){alert('Paste your Apps Script URL first.');return}const params=new URLSearchParams({action:'append',date:new Date().toISOString().slice(0,10),prospect:'Connection Test',series:'',session:1,total:1,confidence:0,objection:0,delivery:0,tips:'test',strengths:'test',fix:'test'});await pingSheet(url,params);alert('Request fired. Check your Google Sheet for a Connection Test row.')}
+function showAlert(type){const el=document.getElementById('alert-'+type);el.style.display='block';setTimeout(()=>el.style.display='none',2800)}
+function scoreClass(n){return n>=8?'score-high':n>=5?'score-mid':'score-low'}
+function avg(arr){if(!arr.length)return null;return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*10)/10}
+function trendStr(entries,key){if(entries.length<2)return 'only one entry';const d=Math.round((entries[entries.length-1][key]-entries[entries.length-2][key])*10)/10;return d>0?`up ${d} from last`:d<0?`down ${Math.abs(d)} from last`:'same as last call'}
+let chartTrend,chartRadar,chartBar;
+function renderDashboard(){
+  const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('stat-calls').textContent=entries.length;
+  if(!entries.length){document.getElementById('dash-empty').style.display='block';document.getElementById('dash-charts').style.display='none';return}
+  document.getElementById('dash-empty').style.display='none';document.getElementById('dash-charts').style.display='block';
+  const ca=avg(entries.map(e=>e.confidence)),oa=avg(entries.map(e=>e.objection)),da=avg(entries.map(e=>e.delivery)),last=entries[entries.length-1];
+  document.getElementById('stat-confidence').textContent=ca??'-';document.getElementById('stat-objection').textContent=oa??'-';document.getElementById('stat-delivery').textContent=da??'-';
+  document.getElementById('stat-confidence-trend').textContent=trendStr(entries,'confidence');document.getElementById('stat-objection-trend').textContent=trendStr(entries,'objection');document.getElementById('stat-delivery-trend').textContent=trendStr(entries,'delivery');
+  document.getElementById('stat-lastcall').textContent=last.date;document.getElementById('stat-lastprospect').textContent=last.series?`${last.series} S${last.session}`:last.prospect;
+  const labels=entries.map(e=>e.date.slice(5)+(e.series?` S${e.session}`:''));
+  const gc='rgba(255,255,255,0.05)',tc='#5a5a72';
+  if(chartTrend)chartTrend.destroy();
+  chartTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels,datasets:[{label:'Confidence',data:entries.map(e=>e.confidence),borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.07)',tension:0.4,fill:true,pointRadius:4,pointHoverRadius:6},{label:'Objection H.',data:entries.map(e=>e.objection),borderColor:'#f56565',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6},{label:'Delivery',data:entries.map(e=>e.delivery),borderColor:'#48bb78',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
+  const sel=document.getElementById('radarSelect');sel.innerHTML='';[...entries].reverse().forEach((e,i)=>{const opt=document.createElement('option');opt.value=entries.length-1-i;opt.textContent=e.series?`${e.prospect} S${e.session} (${e.date})`:`${e.prospect} (${e.date})`;sel.appendChild(opt)});sel.value=entries.length-1;buildRadar(last);
+  if(chartBar)chartBar.destroy();
+  chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery'],datasets:[{label:'Average',data:[ca,oa,da],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   buildWordCloud(entries);
 }
-
-function buildRadar(entry) {
-  if (chartRadar) chartRadar.destroy();
-  const gc = 'rgba(255,255,255,0.05)';
-  const tc = '#5a5a72';
-  chartRadar = new Chart(document.getElementById('chartRadar'), {
-    type:'radar',
-    data:{
-      labels:['Confidence','Objection H.','Delivery'],
-      datasets:[{
-        label: entry.prospect + (entry.session ? ' · '+entry.session : ''),
-        data:[entry.confidence, entry.objection, entry.delivery],
-        borderColor:'#5b5ef4', backgroundColor:'rgba(91,94,244,0.12)',
-        pointBackgroundColor:'#5b5ef4', pointRadius:5
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:tc, font:{ family:'JetBrains Mono', size:10 }, boxWidth:8 } } },
-      scales:{ r:{
-        min:0, max:10,
-        ticks:{ stepSize:2, color:tc, font:{ size:9 }, backdropColor:'transparent' },
-        grid:{ color:gc }, angleLines:{ color:gc },
-        pointLabels:{ color:'#8888a8', font:{ family:'JetBrains Mono', size:10 } }
-      }}
-    }
-  });
-}
-
-function updateRadar() {
-  const entries = getEntries().sort((a,b) => new Date(a.date)-new Date(b.date));
-  const idx = parseInt(document.getElementById('radarSelect').value);
-  if (entries[idx]) buildRadar(entries[idx]);
-}
-
-// Word cloud — canvas-based, no external library needed
-function buildWordCloud(entries) {
-  const stopWords = new Set(['the','a','an','to','in','of','for','and','or','is','it','this','that','be','on','at','with','i','my','me','we','you','your','was','are','as','by','from','so','if','but','not','do','did','can','just','up','out','use','them','they','when','how','more','its','have','had','has','will','than','into','also','been','about','before','after','next','each','then','too','would','should','could','which','what','who']);
-
-  const wordCount = {};
-  entries.forEach(e => {
-    (e.tips || []).concat(e.strengths || []).forEach(text => {
-      text.toLowerCase()
-        .replace(/[^a-z\s]/g, '')
-        .split(/\s+/)
-        .filter(w => w.length > 3 && !stopWords.has(w))
-        .forEach(w => { wordCount[w] = (wordCount[w] || 0) + 1; });
-    });
-  });
-
-  const words = Object.entries(wordCount)
-    .sort((a,b) => b[1]-a[1])
-    .slice(0, 40);
-
-  if (!words.length) return;
-
-  const canvas = document.getElementById('wordcloud-canvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth || 400;
-  const H = 240;
-  canvas.width = W;
-  canvas.height = H;
-  ctx.clearRect(0, 0, W, H);
-
-  const maxCount = words[0][1];
-  const colors = ['#5b5ef4','#3dd68c','#f4635b','#f5a623','#8888a8','#5b5ef4','#3dd68c'];
-  const placed = [];
-
-  function overlaps(x, y, w, h) {
-    for (const p of placed) {
-      if (x < p.x+p.w && x+w > p.x && y < p.y+p.h && y+h > p.y) return true;
-    }
-    return false;
-  }
-
-  words.forEach(([word, count], i) => {
-    const size = Math.round(11 + (count / maxCount) * 22);
-    ctx.font = `${size <= 14 ? 400 : 600} ${size}px 'Albert Sans'`;
-    const tw = ctx.measureText(word).width;
-    const th = size * 1.3;
-    const color = colors[i % colors.length];
-
-    let placed_ok = false;
-    for (let attempt = 0; attempt < 120; attempt++) {
-      const x = Math.random() * (W - tw - 10) + 5;
-      const y = Math.random() * (H - th - 4) + th;
-      if (!overlaps(x, y - th, tw, th + 4)) {
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.55 + (count / maxCount) * 0.45;
-        ctx.fillText(word, x, y);
-        ctx.globalAlpha = 1;
-        placed.push({ x, y: y-th, w: tw, h: th+4 });
-        placed_ok = true;
-        break;
-      }
-    }
-  });
-}
-
-// Call log
-function renderLog() {
-  const entries = getEntries().sort((a,b) => new Date(b.date)-new Date(a.date));
-  const tbody = document.getElementById('log-tbody');
-
-  if (!entries.length) {
-    document.getElementById('log-empty').style.display = 'block';
-    document.getElementById('log-table-wrap').style.display = 'none';
-    return;
-  }
-
-  document.getElementById('log-empty').style.display = 'none';
-  document.getElementById('log-table-wrap').style.display = 'block';
-
-  tbody.innerHTML = entries.map(e => `
-    <tr>
-      <td><span style="font-family:var(--mono);font-size:11px;">${e.date}</span></td>
-      <td><strong>${e.prospect}</strong></td>
-      <td>${e.session ? `<span class="session-badge">${e.session}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
-      <td><span class="score-pill ${sc(e.confidence)}">${e.confidence}</span></td>
-      <td><span class="score-pill ${sc(e.objection)}">${e.objection}</span></td>
-      <td><span class="score-pill ${sc(e.delivery)}">${e.delivery}</span></td>
-      <td style="max-width:200px;color:var(--muted2);font-size:11px;font-family:var(--mono);">${e.tips&&e.tips[0]?e.tips[0].slice(0,55)+'…':'—'}</td>
-      <td style="max-width:160px;color:var(--muted2);font-size:11px;">${e.fix?e.fix.slice(0,45)+'…':'—'}</td>
-      <td><button class="del-btn" onclick="deleteEntry(${e.id})">✕</button></td>
-    </tr>
-  `).join('');
-}
-
-function deleteEntry(id) {
-  if (!confirm('Delete this entry?')) return;
-  saveEntries(getEntries().filter(e => e.id !== id));
-  renderLog();
-}
-
-function exportCSV() {
-  const entries = getEntries().sort((a,b) => new Date(a.date)-new Date(b.date));
-  if (!entries.length) { alert('No entries to export.'); return; }
-  const header = 'Date,Prospect,Session,Confidence,Objection Handling,Delivery,Tips,Strengths,Fix';
-  const rows = entries.map(e => [
-    e.date, `"${e.prospect}"`, `"${e.session||''}"`,
-    e.confidence, e.objection, e.delivery,
-    `"${(e.tips||[]).join(' | ')}"`,
-    `"${(e.strengths||[]).join(' | ')}"`,
-    `"${e.fix||''}"`
-  ].join(','));
-  const blob = new Blob([[header,...rows].join('\n')], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `se-tracker-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-}
-
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-  const saved = getSheetUrl();
-  if (saved) document.getElementById('sheetsUrl').value = saved;
-  renderDashboard();
-});
+function updateRadar(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));buildRadar(entries[parseInt(document.getElementById('radarSelect').value)])}
+function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
+const STOPS=new Set(['a','an','the','and','or','but','in','on','at','to','for','of','with','by','from','is','it','be','as','was','are','that','this','i','my','me','we','you','can','will','would','could','should','have','has','had','do','did','not','if','so','than','then','when','where','what','how','more','also','just','its','their','our','your','use','make','get','give','ask','need','look','take','let','try','show','tell','keep','put','back','way','up','out','all','no','yes','after','before','during','about','into','they','them','each','per','may','any','other','both','strong','good','very','more','better']);
+function buildWordCloud(entries){const freq={};entries.forEach(e=>{(e.tips||[]).concat(e.strengths||[]).forEach(text=>{text.toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/).filter(w=>w.length>3&&!STOPS.has(w)).forEach(w=>{freq[w]=(freq[w]||0)+1})})});const words=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,40);const wrap=document.getElementById('wordcloud-wrap');if(!words.length){wrap.innerHTML='<span style="color:var(--text3);font-size:13px;">Add more entries to see themes emerge.</span>';return}const maxF=words[0][1];const colors=['#7c6dfa','#f56565','#48bb78','#ed8936','#63b3ed','#fc8181','#68d391','#f6ad55','#76e4f7','#b794f4'];wrap.innerHTML='';words.forEach(([word,count],i)=>{const size=11+Math.round((count/maxF)*24);const opacity=0.45+(count/maxF)*0.55;const el=document.createElement('span');el.className='wc-word';el.textContent=word;el.style.cssText=`font-size:${size}px;color:${colors[i%colors.length]};opacity:${opacity};`;el.title=`${word}: ${count} time${count>1?'s':''}`;wrap.appendChild(el)})}
+function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
+function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveEntries(getEntries().filter(e=>e.id!==id));renderLog();renderDashboard()}
+function exportCSV(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));if(!entries.length){alert('No entries to export.');return}const header='Date,Prospect,Series,Session,TotalSessions,Confidence,Objection,Delivery,Tips,Strengths,Fix';const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,e.confidence,e.objection,e.delivery,`"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;a.click()}
+document.addEventListener('DOMContentLoaded',()=>{const s=getSheetUrl();if(s)document.getElementById('sheetsUrl').value=s;renderDashboard()});
 </script>
 </body>
 </html>
