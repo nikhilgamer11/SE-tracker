@@ -723,27 +723,28 @@ One thing to fix before next call:
       <div class="step-content">
         <h3>Open Apps Script</h3>
         <p>In your Sheet, click <strong style="color:var(--text);">Extensions → Apps Script</strong>. Delete any existing code and paste the script below exactly.</p>
-        <div class="code-block">function doPost(e) {
+        <div class="code-block">function doGet(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
-  sheet.appendRow([
-    data.date,
-    data.prospect,
-    data.confidence,
-    data.objection,
-    data.delivery,
-    data.tips,
-    data.strengths,
-    data.fix,
-    new Date().toISOString()
-  ]);
-  return ContentService
-    .createTextOutput(JSON.stringify({status: 'ok'}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+  var p = e.parameter;
 
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (p.action === 'append') {
+    sheet.appendRow([
+      p.date,
+      p.prospect,
+      Number(p.confidence),
+      Number(p.objection),
+      Number(p.delivery),
+      p.tips,
+      p.strengths,
+      p.fix,
+      new Date().toISOString()
+    ]);
+    return ContentService
+      .createTextOutput(JSON.stringify({status: 'ok'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Default: return all rows
   var data = sheet.getDataRange().getValues();
   return ContentService
     .createTextOutput(JSON.stringify({rows: data}))
@@ -917,25 +918,22 @@ async function saveEntry() {
   entries.push(pendingEntry);
   saveEntries(entries);
 
-  // Try Google Sheets if URL set
+  // Google Sheets sync — GET with URL params avoids CORS preflight issues
   const url = getSheetUrl();
   if (url) {
     try {
-      await fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: pendingEntry.date,
-          prospect: pendingEntry.prospect,
-          confidence: pendingEntry.confidence,
-          objection: pendingEntry.objection,
-          delivery: pendingEntry.delivery,
-          tips: pendingEntry.tips.join(' | '),
-          strengths: pendingEntry.strengths.join(' | '),
-          fix: pendingEntry.fix
-        })
+      const params = new URLSearchParams({
+        action: 'append',
+        date: pendingEntry.date,
+        prospect: pendingEntry.prospect,
+        confidence: pendingEntry.confidence,
+        objection: pendingEntry.objection,
+        delivery: pendingEntry.delivery,
+        tips: (pendingEntry.tips || []).join(' | '),
+        strengths: (pendingEntry.strengths || []).join(' | '),
+        fix: pendingEntry.fix || ''
       });
+      await fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
     } catch(e) { console.warn('Sheets sync failed:', e); }
   }
 
@@ -949,11 +947,9 @@ async function testConnection() {
   const url = getSheetUrl();
   if (!url) { alert('Paste your Apps Script URL first.'); return; }
   try {
-    await fetch(url, { method: 'POST', mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({date:'TEST',prospect:'Connection Test',confidence:0,objection:0,delivery:0,tips:'',strengths:'',fix:''})
-    });
-    alert('Request sent (no-cors mode). Check your Sheet for a TEST row to confirm.');
+    const params = new URLSearchParams({action:'append',date:'TEST',prospect:'Connection Test',confidence:0,objection:0,delivery:0,tips:'',strengths:'',fix:''});
+    await fetch(url + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+    alert('Test row sent. Check your Google Sheet for a row with prospect = Connection Test to confirm it worked.');
   } catch(e) { alert('Connection failed: ' + e.message); }
 }
 
