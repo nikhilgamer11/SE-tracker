@@ -362,6 +362,10 @@ let chartTrend,chartRadar,chartBar;
 function renderDashboard(){
   try{
   const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  showDebug('renderDashboard: '+entries.length+' entries. First: '+JSON.stringify(entries[0]).slice(0,120));
+  showDebug('Chart.js loaded: '+(typeof Chart !== "undefined"));
+  showDebug('chartTrend canvas: '+(!!document.getElementById('chartTrend')));
+  showDebug('dash-charts display: '+document.getElementById('dash-charts')?.style.display);
   document.getElementById('stat-calls').textContent=entries.length;
   if(!entries.length){document.getElementById('dash-empty').style.display='block';document.getElementById('dash-charts').style.display='none';return}
   document.getElementById('dash-empty').style.display='none';document.getElementById('dash-charts').style.display='block';
@@ -377,7 +381,7 @@ function renderDashboard(){
   if(chartBar)chartBar.destroy();
   chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:'Average',data:[ca,oa,da,va],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   buildThemeClusters(entries);
-  }catch(err){console.error('Dashboard render error:',err);}
+  }catch(err){console.error('Dashboard render error:',err);showDebug('RENDER ERROR: '+err.message+' | stack: '+err.stack?.slice(0,300));}
 }
 function updateRadar(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));buildRadar(entries[parseInt(document.getElementById('radarSelect').value)])}
 function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery,entry.valuesell||0],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
