@@ -116,6 +116,12 @@ textarea:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
+
+<div id="debug-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a0a0a;border-top:1px solid #f56565;padding:12px 20px;font-family:monospace;font-size:11px;color:#f56565;z-index:999;max-height:200px;overflow-y:auto;">
+  <strong>DEBUG MODE</strong> — <button onclick="document.getElementById('debug-panel').style.display='none'" style="background:none;border:none;color:#f56565;cursor:pointer;font-size:11px;text-decoration:underline;">close</button>
+  <pre id="debug-output" style="margin-top:8px;color:#48bb78;white-space:pre-wrap;word-break:break-all;"></pre>
+</div>
+
 <div class="app">
 <header>
   <div class="brand">
@@ -123,7 +129,7 @@ textarea:focus{border-color:var(--accent)}
     <h1>Demo Tracker</h1>
     <div class="brand-sub">Nikhil · Senior Solutions Engineer · UK &amp; Ireland</div>
   </div>
-  <div class="header-actions">
+  <div class="header-actions" id="header-actions">
     <button class="setup-link" onclick="openSetup()">Setup Guide</button>
     <button class="btn btn-outline" onclick="exportCSV()">&#8595; Export CSV</button>
     <button class="btn btn-primary" onclick="openAddModal()">+ Add Entry</button>
@@ -393,7 +399,22 @@ function buildThemeClusters(entries){
 function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td><span class="score-pill ${scoreClass(e.valuesell||0)}">${e.valuesell||0}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
 function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveEntries(getEntries().filter(e=>e.id!==id));renderLog();renderDashboard()}
 function exportCSV(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));if(!entries.length){alert('No entries to export.');return}const header='Date,Prospect,Series,Session,TotalSessions,Confidence,Objection,Delivery,Tips,Strengths,Fix';const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,e.confidence,e.objection,e.delivery,`"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;a.click()}
+function showDebug(msg){
+  const p=document.getElementById('debug-panel');
+  const o=document.getElementById('debug-output');
+  if(p&&o){p.style.display='block';o.textContent+=msg+'\n';}
+}
 document.addEventListener('DOMContentLoaded',()=>{
+  try{
+    const raw=localStorage.getItem('se_tracker_v2')||localStorage.getItem('se_tracker_entries')||'[]';
+    showDebug('RAW STORE KEY se_tracker_v2: '+localStorage.getItem('se_tracker_v2')?.slice(0,120));
+    showDebug('RAW STORE KEY se_tracker_entries: '+localStorage.getItem('se_tracker_entries')?.slice(0,120));
+    showDebug('ALL localStorage keys: '+Object.keys(localStorage).join(', '));
+    const parsed=JSON.parse(raw);
+    showDebug('Parsed entries count: '+parsed.length);
+    if(parsed.length>0){showDebug('First entry: '+JSON.stringify(parsed[0]).slice(0,200));}
+  }catch(e){showDebug('PARSE ERROR: '+e.message);}
+
   // Migrate old entries that may be missing newer fields
   const raw=getEntries();
   const migrated=raw.map(e=>({
