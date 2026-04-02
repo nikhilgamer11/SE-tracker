@@ -303,7 +303,7 @@ function parseTrackerBlock(text){
   const sB=text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
   const strengths=sB?sB[1].split('\n').map(l=>l.replace(/^\s*[-]\s*/,'').trim()).filter(Boolean):[];
   const fix=get(/One thing to fix[^:]*:\s*[-]?\s*([^\n]+)/i);
-  return{date,prospect,series,session,total,confidence,objection,delivery,tips,strengths,fix,id:Date.now()}
+  return{date,prospect,series:series||'',session:session||1,total:total||1,confidence:confidence||0,objection:objection||0,delivery:delivery||0,valuesell:valuesell||0,tips:tips||[],strengths:strengths||[],fix:fix||'',id:Date.now()}
 }
 function parseInput(){const e=parseTrackerBlock(document.getElementById('pasteInput').value);if(!e){showAlert('error');return}pendingEntry=e;showPreview(e);document.getElementById('parse-status').textContent='Parsed OK'}
 function fillFromManual(){const e={date:document.getElementById('m-date').value,prospect:document.getElementById('m-prospect').value.trim(),series:document.getElementById('m-series').value.trim(),session:parseInt(document.getElementById('m-session').value)||1,total:parseInt(document.getElementById('m-total').value)||1,confidence:parseFloat(document.getElementById('m-confidence').value)||0,objection:parseFloat(document.getElementById('m-objection').value)||0,delivery:parseFloat(document.getElementById('m-delivery').value)||0,tips:document.getElementById('m-tips').value.split('\n').map(l=>l.trim()).filter(Boolean),strengths:document.getElementById('m-strengths').value.split('\n').map(l=>l.trim()).filter(Boolean),fix:document.getElementById('m-fix').value.trim(),id:Date.now()};if(!e.date||!e.prospect){showAlert('error');return}pendingEntry=e;showPreview(e)}
@@ -342,9 +342,10 @@ async function testConnection(){const url=getSheetUrl();if(!url){alert('Paste yo
 function showAlert(type){const el=document.getElementById('alert-'+type);el.style.display='block';setTimeout(()=>el.style.display='none',2800)}
 function scoreClass(n){return n>=8?'score-high':n>=5?'score-mid':'score-low'}
 function avg(arr){if(!arr.length)return null;return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*10)/10}
-function trendStr(entries,key){if(entries.length<2)return 'only one entry';const d=Math.round((entries[entries.length-1][key]-entries[entries.length-2][key])*10)/10;return d>0?`up ${d} from last`:d<0?`down ${Math.abs(d)} from last`:'same as last call'}
+function trendStr(entries,key){if(entries.length<2)return 'only one entry';const last=parseFloat(entries[entries.length-1][key])||0;const prev=parseFloat(entries[entries.length-2][key])||0;const d=Math.round((last-prev)*10)/10;return d>0?`up ${d} from last`:d<0?`down ${Math.abs(d)} from last`:'same as last call'}
 let chartTrend,chartRadar,chartBar;
 function renderDashboard(){
+  try{
   const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));
   document.getElementById('stat-calls').textContent=entries.length;
   if(!entries.length){document.getElementById('dash-empty').style.display='block';document.getElementById('dash-charts').style.display='none';return}
@@ -361,6 +362,7 @@ function renderDashboard(){
   if(chartBar)chartBar.destroy();
   chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:'Average',data:[ca,oa,da,va],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   buildThemeClusters(entries);
+  }catch(err){console.error('Dashboard render error:',err);}
 }
 function updateRadar(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));buildRadar(entries[parseInt(document.getElementById('radarSelect').value)])}
 function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery,entry.valuesell||0],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
@@ -391,7 +393,29 @@ function buildThemeClusters(entries){
 function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td><span class="score-pill ${scoreClass(e.valuesell||0)}">${e.valuesell||0}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
 function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveEntries(getEntries().filter(e=>e.id!==id));renderLog();renderDashboard()}
 function exportCSV(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));if(!entries.length){alert('No entries to export.');return}const header='Date,Prospect,Series,Session,TotalSessions,Confidence,Objection,Delivery,Tips,Strengths,Fix';const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,e.confidence,e.objection,e.delivery,`"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;a.click()}
-document.addEventListener('DOMContentLoaded',()=>{const s=getSheetUrl();if(s)document.getElementById('sheetsUrl').value=s;renderDashboard()});
+document.addEventListener('DOMContentLoaded',()=>{
+  // Migrate old entries that may be missing newer fields
+  const raw=getEntries();
+  const migrated=raw.map(e=>({
+    date:e.date||'',
+    prospect:e.prospect||'',
+    series:e.series||'',
+    session:e.session||1,
+    total:e.total||1,
+    confidence:parseFloat(e.confidence)||0,
+    objection:parseFloat(e.objection)||0,
+    delivery:parseFloat(e.delivery)||0,
+    valuesell:parseFloat(e.valuesell)||0,
+    tips:Array.isArray(e.tips)?e.tips:[],
+    strengths:Array.isArray(e.strengths)?e.strengths:[],
+    fix:e.fix||'',
+    id:e.id||Date.now()
+  }));
+  saveEntries(migrated);
+  const s=getSheetUrl();
+  if(s)document.getElementById('sheetsUrl').value=s;
+  renderDashboard();
+});
 </script>
 </body>
 </html>
