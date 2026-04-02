@@ -32,7 +32,7 @@ header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:3
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
 .stat-card:hover{border-color:var(--border2)}
 .stat-accent{position:absolute;top:0;left:20px;width:32px;height:2px;border-radius:0 0 2px 2px}
-.sa-purple{background:var(--accent)}.sa-red{background:var(--red)}.sa-green{background:var(--green)}.sa-amber{background:var(--amber)}
+.sa-purple{background:var(--accent)}.sa-red{background:var(--red)}.sa-green{background:var(--green)}.sa-amber{background:var(--amber)}.sa-teal{background:#4fd1c5}
 .stat-label{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
 .stat-value{font-family:'Instrument Serif',serif;font-size:38px;font-weight:400;line-height:1}
 .stat-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:300}
@@ -99,6 +99,20 @@ textarea:focus{border-color:var(--accent)}
 .code-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--green);margin-top:10px;line-height:1.8;overflow-x:auto;white-space:pre;max-width:100%;display:block;box-sizing:border-box}
 @media(max-width:700px){.charts-grid{grid-template-columns:1fr}.chart-card.full{grid-column:1}.stats-row{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.btn-saving{background:#3a3a6a!important;color:var(--text2)!important;cursor:not-allowed!important;transform:none!important}
+.btn-saved{background:var(--green)!important;color:#fff!important;transform:none!important}
+.save-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text2);animation:pulse-dot 0.8s infinite alternate}
+@keyframes pulse-dot{from{opacity:0.3;transform:scale(0.8)}to{opacity:1;transform:scale(1.2)}}
+.theme-cluster{margin-bottom:10px}
+.theme-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.theme-name{font-family:'Geist Mono',monospace;font-size:10px;color:var(--text2);width:130px;flex-shrink:0;letter-spacing:.05em}
+.theme-bar-wrap{flex:1;background:var(--surface2);border-radius:3px;height:6px;overflow:hidden}
+.theme-bar{height:6px;border-radius:3px;transition:width .6s ease}
+.theme-count{font-family:'Geist Mono',monospace;font-size:10px;color:var(--text3);width:20px;text-align:right;flex-shrink:0}
+.theme-tips{margin-left:140px;margin-bottom:12px}
+.theme-tip{font-size:11px;color:var(--text3);line-height:1.6;padding:2px 0}
+.theme-tip::before{content:'→ ';color:var(--text3)}
 </style>
 </head>
 <body>
@@ -144,7 +158,7 @@ textarea:focus{border-color:var(--accent)}
   <div id="log-empty" class="empty" style="display:none;"><div class="empty-icon">&#128203;</div><h3>No calls logged</h3><p>Add your first entry to start tracking.</p></div>
   <div class="log-table-wrap" id="log-table-wrap">
     <table class="log-table">
-      <thead><tr><th>Date</th><th>Prospect</th><th>Series</th><th>Session</th><th>Confidence</th><th>Objection H.</th><th>Delivery</th><th>Fix</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Prospect</th><th>Series</th><th>Session</th><th>Confidence</th><th>Objection H.</th><th>Delivery</th><th>Value Sell</th><th>Fix</th><th></th></tr></thead>
       <tbody id="log-tbody"></tbody>
     </table>
   </div>
@@ -216,7 +230,7 @@ One thing to fix before next call:
       <div class="preview-grid" id="preview-grid"></div>
       <div id="preview-extras"></div>
       <div style="display:flex;gap:10px;margin-top:14px;">
-        <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+        <button class="btn btn-primary" id="save-btn" onclick="saveEntry()">Save Entry</button>
         <button class="btn btn-ghost" onclick="cancelPreview()">Cancel</button>
       </div>
     </div>
@@ -283,7 +297,7 @@ function parseTrackerBlock(text){
   const total=parseInt(get(/Total Sessions:\s*([^\n]+)/i,'1'))||1;
   const confidence=parseFloat(get(/Confidence Score:\s*([^\n]+)/i))||0;
   const objection=parseFloat(get(/Objection Handling Score:\s*([^\n]+)/i))||0;
-  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i))||0;
+  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i))||0;const valuesell=parseFloat(get(/Value Selling(?:\s*Score)?:\s*([^\n]+)/i))||0;
   const tB=text.match(/Top 3 Coaching Tips:([\s\S]*?)(?:Strengths:|One thing to fix|$)/i);
   const tips=tB?tB[1].split('\n').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
   const sB=text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
@@ -297,7 +311,33 @@ function showPreview(e){document.getElementById('preview-card').style.display='b
 function cancelPreview(){document.getElementById('preview-card').style.display='none';pendingEntry=null}
 function clearInput(){document.getElementById('pasteInput').value='';document.getElementById('preview-card').style.display='none';document.getElementById('parse-status').textContent='';pendingEntry=null}
 function pingSheet(url,params){return new Promise(resolve=>{const full=url+'?'+params.toString();const img=new Image();img.onload=img.onerror=()=>resolve(true);img.src=full;fetch(full,{method:'GET',mode:'no-cors'}).catch(()=>{});setTimeout(()=>resolve(true),3000)})}
-async function saveEntry(){if(!pendingEntry)return;const entries=getEntries();entries.push(pendingEntry);saveEntries(entries);const url=getSheetUrl();if(url){const params=new URLSearchParams({action:'append',date:pendingEntry.date,prospect:pendingEntry.prospect,series:pendingEntry.series||'',session:pendingEntry.session||1,total:pendingEntry.total||1,confidence:pendingEntry.confidence,objection:pendingEntry.objection,delivery:pendingEntry.delivery,tips:(pendingEntry.tips||[]).join(' | '),strengths:(pendingEntry.strengths||[]).join(' | '),fix:pendingEntry.fix||''});await pingSheet(url,params)}pendingEntry=null;document.getElementById('preview-card').style.display='none';document.getElementById('pasteInput').value='';showAlert('success');setTimeout(()=>{closeAddModal();renderDashboard()},1200)}
+async function saveEntry(){
+  if(!pendingEntry)return;
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true;
+  btn.className='btn btn-saving';
+  btn.innerHTML='<span class="save-dot"></span> Saving…';
+  const entries=getEntries();
+  entries.push(pendingEntry);
+  saveEntries(entries);
+  const url=getSheetUrl();
+  if(url){
+    const params=new URLSearchParams({action:'append',date:pendingEntry.date,prospect:pendingEntry.prospect,series:pendingEntry.series||'',session:pendingEntry.session||1,total:pendingEntry.total||1,confidence:pendingEntry.confidence,objection:pendingEntry.objection,delivery:pendingEntry.delivery,valuesell:pendingEntry.valuesell||0,tips:(pendingEntry.tips||[]).join(' | '),strengths:(pendingEntry.strengths||[]).join(' | '),fix:pendingEntry.fix||''});
+    await pingSheet(url,params);
+  }
+  btn.className='btn btn-saved';
+  btn.innerHTML='✓ Saved';
+  btn.disabled=true;
+  await new Promise(r=>setTimeout(r,900));
+  pendingEntry=null;
+  document.getElementById('preview-card').style.display='none';
+  document.getElementById('pasteInput').value='';
+  btn.className='btn btn-primary';
+  btn.innerHTML='Save Entry';
+  btn.disabled=false;
+  closeAddModal();
+  renderDashboard();
+}
 async function testConnection(){const url=getSheetUrl();if(!url){alert('Paste your Apps Script URL first.');return}const params=new URLSearchParams({action:'append',date:new Date().toISOString().slice(0,10),prospect:'Connection Test',series:'',session:1,total:1,confidence:0,objection:0,delivery:0,tips:'test',strengths:'test',fix:'test'});await pingSheet(url,params);alert('Request fired. Check your Google Sheet for a Connection Test row.')}
 function showAlert(type){const el=document.getElementById('alert-'+type);el.style.display='block';setTimeout(()=>el.style.display='none',2800)}
 function scoreClass(n){return n>=8?'score-high':n>=5?'score-mid':'score-low'}
@@ -309,24 +349,46 @@ function renderDashboard(){
   document.getElementById('stat-calls').textContent=entries.length;
   if(!entries.length){document.getElementById('dash-empty').style.display='block';document.getElementById('dash-charts').style.display='none';return}
   document.getElementById('dash-empty').style.display='none';document.getElementById('dash-charts').style.display='block';
-  const ca=avg(entries.map(e=>e.confidence)),oa=avg(entries.map(e=>e.objection)),da=avg(entries.map(e=>e.delivery)),last=entries[entries.length-1];
-  document.getElementById('stat-confidence').textContent=ca??'-';document.getElementById('stat-objection').textContent=oa??'-';document.getElementById('stat-delivery').textContent=da??'-';
-  document.getElementById('stat-confidence-trend').textContent=trendStr(entries,'confidence');document.getElementById('stat-objection-trend').textContent=trendStr(entries,'objection');document.getElementById('stat-delivery-trend').textContent=trendStr(entries,'delivery');
+  const ca=avg(entries.map(e=>e.confidence)),oa=avg(entries.map(e=>e.objection)),da=avg(entries.map(e=>e.delivery)),va=avg(entries.map(e=>e.valuesell||0)),last=entries[entries.length-1];
+  document.getElementById('stat-confidence').textContent=ca??'-';document.getElementById('stat-objection').textContent=oa??'-';document.getElementById('stat-delivery').textContent=da??'-';document.getElementById('stat-valuesell').textContent=va??'-';
+  document.getElementById('stat-confidence-trend').textContent=trendStr(entries,'confidence');document.getElementById('stat-objection-trend').textContent=trendStr(entries,'objection');document.getElementById('stat-delivery-trend').textContent=trendStr(entries,'delivery');document.getElementById('stat-valuesell-trend').textContent=trendStr(entries,'valuesell');
   document.getElementById('stat-lastcall').textContent=last.date;document.getElementById('stat-lastprospect').textContent=last.series?`${last.series} S${last.session}`:last.prospect;
   const labels=entries.map(e=>e.date.slice(5)+(e.series?` S${e.session}`:''));
   const gc='rgba(255,255,255,0.05)',tc='#5a5a72';
   if(chartTrend)chartTrend.destroy();
-  chartTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels,datasets:[{label:'Confidence',data:entries.map(e=>e.confidence),borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.07)',tension:0.4,fill:true,pointRadius:4,pointHoverRadius:6},{label:'Objection H.',data:entries.map(e=>e.objection),borderColor:'#f56565',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6},{label:'Delivery',data:entries.map(e=>e.delivery),borderColor:'#48bb78',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
+  chartTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels,datasets:[{label:'Confidence',data:entries.map(e=>e.confidence),borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.07)',tension:0.4,fill:true,pointRadius:4,pointHoverRadius:6},{label:'Objection H.',data:entries.map(e=>e.objection),borderColor:'#f56565',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6},{label:'Delivery',data:entries.map(e=>e.delivery),borderColor:'#48bb78',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6},{label:'Value Selling',data:entries.map(e=>e.valuesell||0),borderColor:'#4fd1c5',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   const sel=document.getElementById('radarSelect');sel.innerHTML='';[...entries].reverse().forEach((e,i)=>{const opt=document.createElement('option');opt.value=entries.length-1-i;opt.textContent=e.series?`${e.prospect} S${e.session} (${e.date})`:`${e.prospect} (${e.date})`;sel.appendChild(opt)});sel.value=entries.length-1;buildRadar(last);
   if(chartBar)chartBar.destroy();
-  chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery'],datasets:[{label:'Average',data:[ca,oa,da],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
-  buildWordCloud(entries);
+  chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:'Average',data:[ca,oa,da,va],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
+  buildThemeClusters(entries);
 }
 function updateRadar(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));buildRadar(entries[parseInt(document.getElementById('radarSelect').value)])}
-function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
-const STOPS=new Set(['a','an','the','and','or','but','in','on','at','to','for','of','with','by','from','is','it','be','as','was','are','that','this','i','my','me','we','you','can','will','would','could','should','have','has','had','do','did','not','if','so','than','then','when','where','what','how','more','also','just','its','their','our','your','use','make','get','give','ask','need','look','take','let','try','show','tell','keep','put','back','way','up','out','all','no','yes','after','before','during','about','into','they','them','each','per','may','any','other','both','strong','good','very','more','better']);
-function buildWordCloud(entries){const freq={};entries.forEach(e=>{(e.tips||[]).concat(e.strengths||[]).forEach(text=>{text.toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/).filter(w=>w.length>3&&!STOPS.has(w)).forEach(w=>{freq[w]=(freq[w]||0)+1})})});const words=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,40);const wrap=document.getElementById('wordcloud-wrap');if(!words.length){wrap.innerHTML='<span style="color:var(--text3);font-size:13px;">Add more entries to see themes emerge.</span>';return}const maxF=words[0][1];const colors=['#7c6dfa','#f56565','#48bb78','#ed8936','#63b3ed','#fc8181','#68d391','#f6ad55','#76e4f7','#b794f4'];wrap.innerHTML='';words.forEach(([word,count],i)=>{const size=11+Math.round((count/maxF)*24);const opacity=0.45+(count/maxF)*0.55;const el=document.createElement('span');el.className='wc-word';el.textContent=word;el.style.cssText=`font-size:${size}px;color:${colors[i%colors.length]};opacity:${opacity};`;el.title=`${word}: ${count} time${count>1?'s':''}`;wrap.appendChild(el)})}
-function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
+function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery,entry.valuesell||0],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
+const THEME_MAP={
+  'Value Selling':['value','pain','business impact','roi','outcome','benefit','problem','cost','revenue','anchor','tie','commercial','justify','priority','goal','result','success'],
+  'Demo Flow':['transition','flow','demo','next','section','move','navigate','structure','story','narrative','show','walk','sequence','pacing','timing','agenda'],
+  'Technical Depth':['technical','integration','api','scim','data','feature','config','setup','portal','admin','reporting','module','field','system','platform','architecture'],
+  'Objection Handling':['objection','concern','pushback','challenge','worry','risk','hesitation','reframe','reversal','handle','address','respond','question','doubt','resistance'],
+  'Questioning Technique':['question','ask','probe','discovery','situational','implication','qbs','understand','clarify','explore','uncover','diagnose','need','payoff','open']
+};
+const THEME_COLORS={'Value Selling':'#4fd1c5','Demo Flow':'#7c6dfa','Technical Depth':'#63b3ed','Objection Handling':'#f56565','Questioning Technique':'#ed8936'};
+function classifyTip(tip){const lower=tip.toLowerCase();const scores={};Object.entries(THEME_MAP).forEach(([theme,kws])=>{scores[theme]=kws.filter(kw=>lower.includes(kw)).length});const best=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];return best&&best[1]>0?best[0]:'Demo Flow'}
+function buildThemeClusters(entries){
+  const wrap=document.getElementById('theme-cluster-wrap');
+  if(!wrap)return;
+  const themes={'Value Selling':[],'Demo Flow':[],'Technical Depth':[],'Objection Handling':[],'Questioning Technique':[]};
+  entries.forEach(e=>{(e.tips||[]).forEach(tip=>{if(tip.trim()){const t=classifyTip(tip);themes[t].push(tip)}})});
+  const max=Math.max(...Object.values(themes).map(t=>t.length),1);
+  if(Object.values(themes).every(t=>t.length===0)){wrap.innerHTML='<span style="color:var(--text3);font-size:12px;">Add more entries to see coaching themes emerge.</span>';return}
+  wrap.innerHTML=Object.entries(themes).map(([name,tips])=>{
+    const pct=Math.round(tips.length/max*100);
+    const col=THEME_COLORS[name];
+    const tipHtml=tips.slice(0,3).map(t=>`<div class="theme-tip">${t.slice(0,80)}${t.length>80?'…':''}</div>`).join('');
+    const more=tips.length>3?`<div style="font-size:10px;color:var(--text3);margin-left:140px;margin-bottom:8px;">+${tips.length-3} more</div>`:'';
+    return`<div class="theme-cluster"><div class="theme-row"><span class="theme-name">${name}</span><div class="theme-bar-wrap"><div class="theme-bar" style="width:${pct}%;background:${col}"></div></div><span class="theme-count">${tips.length}</span></div>${tips.length?`<div class="theme-tips">${tipHtml}</div>${more}`:'<div style="margin-left:140px;margin-bottom:10px;font-size:11px;color:var(--text3);">No tips yet</div>'}</div>`
+  }).join('');
+}
+function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td><span class="score-pill ${scoreClass(e.valuesell||0)}">${e.valuesell||0}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
 function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveEntries(getEntries().filter(e=>e.id!==id));renderLog();renderDashboard()}
 function exportCSV(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));if(!entries.length){alert('No entries to export.');return}const header='Date,Prospect,Series,Session,TotalSessions,Confidence,Objection,Delivery,Tips,Strengths,Fix';const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,e.confidence,e.objection,e.delivery,`"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;a.click()}
 document.addEventListener('DOMContentLoaded',()=>{const s=getSheetUrl();if(s)document.getElementById('sheetsUrl').value=s;renderDashboard()});
