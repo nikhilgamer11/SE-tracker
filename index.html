@@ -283,8 +283,17 @@ One thing to fix before next call:
 
 <script>
 const STORE_KEY='se_tracker_v2',SHEET_KEY='se_sheet_url';
-function getEntries(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||'[]')}catch{return[]}}
-function saveEntries(a){localStorage.setItem(STORE_KEY,JSON.stringify(a))}
+function getEntries(){
+  try{
+    const v2=JSON.parse(localStorage.getItem('se_tracker_v2')||'[]');
+    const v1=JSON.parse(localStorage.getItem('se_tracker_entries')||'[]');
+    const keys=new Set(v2.map(e=>e.date+'|'+e.prospect));
+    const merged=[...v2,...v1.filter(e=>!keys.has(e.date+'|'+e.prospect))];
+    if(v1.length>0){localStorage.setItem('se_tracker_v2',JSON.stringify(merged));localStorage.removeItem('se_tracker_entries');}
+    return merged;
+  }catch(e){return[];}
+}
+function saveEntries(a){localStorage.setItem('se_tracker_v2',JSON.stringify(a))}
 function getSheetUrl(){return localStorage.getItem(SHEET_KEY)||''}
 function saveSheetUrl(){localStorage.setItem(SHEET_KEY,document.getElementById('sheetsUrl').value.trim())}
 function switchTab(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.querySelectorAll('.nav-tab')[['dashboard','log'].indexOf(id)].classList.add('active');if(id==='dashboard')renderDashboard();if(id==='log')renderLog()}
