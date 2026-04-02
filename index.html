@@ -277,17 +277,14 @@ One thing to fix before next call:
 </div>
 
 <script>
-// ── Storage ──────────────────────────────────────────────────────────────────
+// ── Storage ───────────────────────────────────────────────────────────────────
 function getEntries(){
   try{
     const v2=JSON.parse(localStorage.getItem('se_tracker_v2')||'[]');
     const v1=JSON.parse(localStorage.getItem('se_tracker_entries')||'[]');
     const keys=new Set(v2.map(e=>e.date+'|'+e.prospect));
     const merged=[...v2,...v1.filter(e=>!keys.has(e.date+'|'+e.prospect))];
-    if(v1.length>0){
-      localStorage.setItem('se_tracker_v2',JSON.stringify(merged));
-      localStorage.removeItem('se_tracker_entries');
-    }
+    if(v1.length>0){localStorage.setItem('se_tracker_v2',JSON.stringify(merged));localStorage.removeItem('se_tracker_entries');}
     return merged;
   }catch(e){return[];}
 }
@@ -295,7 +292,7 @@ function saveEntries(a){localStorage.setItem('se_tracker_v2',JSON.stringify(a));
 function getSheetUrl(){return localStorage.getItem('se_sheet_url')||'';}
 function saveSheetUrl(){localStorage.setItem('se_sheet_url',document.getElementById('sheetsUrl').value.trim());}
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -308,7 +305,7 @@ function switchTab(id){
   if(id==='log') renderLog();
 }
 
-// ── Modals ───────────────────────────────────────────────────────────────────
+// ── Modals ────────────────────────────────────────────────────────────────────
 function openAddModal(){
   document.getElementById('add-modal').classList.add('open');
   const s=getSheetUrl();
@@ -318,27 +315,46 @@ function closeAddModal(){document.getElementById('add-modal').classList.remove('
 function openSetup(){document.getElementById('setup-modal').classList.add('open');}
 function closeSetup(){document.getElementById('setup-modal').classList.remove('open');}
 
-// ── Parse ────────────────────────────────────────────────────────────────────
+// ── Parse ─────────────────────────────────────────────────────────────────────
 let pendingEntry=null;
 
 function parseTrackerBlock(text){
-  const get=(p,fb='')=>{const m=text.match(p);return m?m[1].trim():fb;};
-  const date=get(/Call Date:\s*([^\n]+)/i);
-  const prospect=get(/Prospect:\s*([^\n]+)/i);
+  const get=(pattern,fb='')=>{const m=text.match(pattern);return m?m[1].trim():fb;};
+  const date=get(/Call Date:\s*([^
+]+)/i);
+  const prospect=get(/Prospect:\s*([^
+]+)/i);
   if(!date||!prospect) return null;
-  const series=get(/Series Name:\s*([^\n]+)/i,'');
-  const session=parseInt(get(/^Session:\s*([^\n]+)/im,'1'))||1;
-  const total=parseInt(get(/Total Sessions:\s*([^\n]+)/i,'1'))||1;
-  const confidence=parseFloat(get(/Confidence Score:\s*([^\n]+)/i))||0;
-  const objection=parseFloat(get(/Objection Handling Score:\s*([^\n]+)/i))||0;
-  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i))||0;
-  const valuesell=parseFloat(get(/Value Selling(?:\s*Score)?:\s*([^\n]+)/i))||0;
+  const series=get(/Series Name:\s*([^
+]+)/i,'');
+  const session=parseInt(get(/^Session:\s*([^
+]+)/im,'1'))||1;
+  const total=parseInt(get(/Total Sessions:\s*([^
+]+)/i,'1'))||1;
+  const confidence=parseFloat(get(/Confidence Score:\s*([^
+]+)/i))||0;
+  const objection=parseFloat(get(/Objection Handling Score:\s*([^
+]+)/i))||0;
+  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^
+]+)/i))||0;
+  const valuesell=parseFloat(get(/Value Selling\s*Score:\s*([^
+]+)/i))||0;
   const tB=text.match(/Top 3 Coaching Tips:([\s\S]*?)(?:Strengths:|One thing to fix|$)/i);
-  const tips=tB?tB[1].split('\n').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
+  const tips=tB?tB[1].split('
+').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
   const sB=text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
-  const strengths=sB?sB[1].split('\n').map(l=>l.replace(/^\s*[-–]\s*/,'').trim()).filter(Boolean):[];
-  const fix=get(/One thing to fix[^:]*:\s*[-–]?\s*([^\n]+)/i);
-  return{date,prospect,series:series||'',session,total,confidence,objection,delivery,valuesell,tips,strengths,fix:fix||'',id:Date.now()};
+  const strengths=sB?sB[1].split('
+').map(l=>l.replace(/^\s*[-–]\s*/,'').trim()).filter(Boolean):[];
+  const fix=get(/One thing to fix[^:]*:\s*[-–]?\s*([^
+]+)/i);
+  return{
+    date,prospect,
+    series:series||'',session:session||1,total:total||1,
+    confidence:confidence||0,objection:objection||0,
+    delivery:delivery||0,valuesell:valuesell||0,
+    tips:tips||[],strengths:strengths||[],
+    fix:fix||'',id:Date.now()
+  };
 }
 
 function parseInput(){
@@ -351,14 +367,15 @@ function parseInput(){
 
 function showPreview(e){
   document.getElementById('preview-card').style.display='block';
-  let grid=`<div class="pf"><label>Date</label><span>${e.date}</span></div>
-    <div class="pf"><label>Prospect</label><span>${e.prospect}</span></div>
-    ${e.series?`<div class="pf"><label>Series</label><span>${e.series} S${e.session}/${e.total}</span></div>`:''}
-    <div class="pf"><label>Confidence</label><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}/10</span></div>
-    <div class="pf"><label>Objection H.</label><span class="score-pill ${scoreClass(e.objection)}">${e.objection}/10</span></div>
-    <div class="pf"><label>Delivery</label><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}/10</span></div>
-    <div class="pf"><label>Value Selling</label><span class="score-pill ${scoreClass(e.valuesell)}">${e.valuesell}/10</span></div>`;
-  document.getElementById('preview-grid').innerHTML=grid;
+  const sc=n=>n>=8?'score-high':n>=5?'score-mid':'score-low';
+  document.getElementById('preview-grid').innerHTML=
+    `<div class="pf"><label>Date</label><span>${e.date}</span></div>
+     <div class="pf"><label>Prospect</label><span>${e.prospect}</span></div>
+     ${e.series?`<div class="pf"><label>Series</label><span>${e.series} S${e.session}/${e.total}</span></div>`:''}
+     <div class="pf"><label>Confidence</label><span class="score-pill ${sc(e.confidence)}">${e.confidence}/10</span></div>
+     <div class="pf"><label>Objection H.</label><span class="score-pill ${sc(e.objection)}">${e.objection}/10</span></div>
+     <div class="pf"><label>Delivery</label><span class="score-pill ${sc(e.delivery)}">${e.delivery}/10</span></div>
+     <div class="pf"><label>Value Selling</label><span class="score-pill ${sc(e.valuesell)}">${e.valuesell}/10</span></div>`;
   let ex='';
   if(e.tips.length) ex+=`<div class="preview-block"><strong>Tips</strong>${e.tips.map((t,i)=>`${i+1}. ${t}`).join('<br>')}</div>`;
   if(e.strengths.length) ex+=`<div class="preview-block"><strong>Strengths</strong>${e.strengths.map(s=>`- ${s}`).join('<br>')}</div>`;
@@ -374,7 +391,7 @@ function clearInput(){
   pendingEntry=null;
 }
 
-// ── Save ─────────────────────────────────────────────────────────────────────
+// ── Save ──────────────────────────────────────────────────────────────────────
 function pingSheet(url,params){
   return new Promise(resolve=>{
     const full=url+'?'+params.toString();
@@ -402,7 +419,8 @@ async function saveEntry(){
       series:pendingEntry.series||'',session:pendingEntry.session||1,total:pendingEntry.total||1,
       confidence:pendingEntry.confidence,objection:pendingEntry.objection,
       delivery:pendingEntry.delivery,valuesell:pendingEntry.valuesell||0,
-      tips:(pendingEntry.tips||[]).join(' | '),strengths:(pendingEntry.strengths||[]).join(' | '),
+      tips:(pendingEntry.tips||[]).join(' | '),
+      strengths:(pendingEntry.strengths||[]).join(' | '),
       fix:pendingEntry.fix||''
     });
     await pingSheet(url,params);
@@ -425,7 +443,8 @@ async function testConnection(){
   if(!url){alert('Paste your Apps Script URL first.');return;}
   const params=new URLSearchParams({action:'append',date:new Date().toISOString().slice(0,10),
     prospect:'Connection Test',series:'',session:1,total:1,
-    confidence:0,objection:0,delivery:0,valuesell:0,tips:'test',strengths:'test',fix:'test'});
+    confidence:0,objection:0,delivery:0,valuesell:0,
+    tips:'test',strengths:'test',fix:'test'});
   await pingSheet(url,params);
   alert('Request fired. Check your Sheet for a Connection Test row.');
 }
@@ -434,15 +453,15 @@ function showAlert(type){
   const el=document.getElementById('alert-'+type);
   if(!el) return;
   el.style.display='block';
-  setTimeout(()=>el.style.display='none',2800);
+  setTimeout(()=>{el.style.display='none';},2800);
 }
 
-// ── Score helpers ─────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function scoreClass(n){return n>=8?'score-high':n>=5?'score-mid':'score-low';}
 function avg(arr){
-  const valid=arr.filter(v=>typeof v==='number'&&!isNaN(v));
-  if(!valid.length) return null;
-  return Math.round(valid.reduce((a,b)=>a+b,0)/valid.length*10)/10;
+  const v=arr.filter(x=>typeof x==='number'&&!isNaN(x));
+  if(!v.length) return null;
+  return Math.round(v.reduce((a,b)=>a+b,0)/v.length*10)/10;
 }
 function trendStr(entries,key){
   if(entries.length<2) return 'only one entry';
@@ -465,13 +484,11 @@ function renderDashboard(){
   }
   document.getElementById('dash-empty').style.display='none';
   document.getElementById('dash-charts').style.display='block';
-
-  const ca=avg(entries.map(e=>e.confidence));
-  const oa=avg(entries.map(e=>e.objection));
-  const da=avg(entries.map(e=>e.delivery));
+  const ca=avg(entries.map(e=>e.confidence||0));
+  const oa=avg(entries.map(e=>e.objection||0));
+  const da=avg(entries.map(e=>e.delivery||0));
   const va=avg(entries.map(e=>e.valuesell||0));
   const last=entries[entries.length-1];
-
   document.getElementById('stat-confidence').textContent=ca??'-';
   document.getElementById('stat-objection').textContent=oa??'-';
   document.getElementById('stat-delivery').textContent=da??'-';
@@ -482,25 +499,18 @@ function renderDashboard(){
   document.getElementById('stat-valuesell-trend').textContent=trendStr(entries,'valuesell');
   document.getElementById('stat-lastcall').textContent=last.date;
   document.getElementById('stat-lastprospect').textContent=last.series?`${last.series} S${last.session}`:last.prospect;
-
   const labels=entries.map(e=>e.date.slice(5)+(e.series?` S${e.session}`:''));
   const gc='rgba(255,255,255,0.05)',tc='#5a5a72';
-
   if(chartTrend) chartTrend.destroy();
-  chartTrend=new Chart(document.getElementById('chartTrend'),{
-    type:'line',
-    data:{labels,datasets:[
-      {label:'Confidence',data:entries.map(e=>e.confidence||0),borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.07)',tension:0.4,fill:true,pointRadius:4},
-      {label:'Objection H.',data:entries.map(e=>e.objection||0),borderColor:'#f56565',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4},
-      {label:'Delivery',data:entries.map(e=>e.delivery||0),borderColor:'#48bb78',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4},
-      {label:'Value Selling',data:entries.map(e=>e.valuesell||0),borderColor:'#4fd1c5',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:10}}},
-      scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},
-              y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}
-  });
-
+  chartTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels,datasets:[
+    {label:'Confidence',data:entries.map(e=>e.confidence||0),borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.07)',tension:0.4,fill:true,pointRadius:4},
+    {label:'Objection H.',data:entries.map(e=>e.objection||0),borderColor:'#f56565',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4},
+    {label:'Delivery',data:entries.map(e=>e.delivery||0),borderColor:'#48bb78',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4},
+    {label:'Value Selling',data:entries.map(e=>e.valuesell||0),borderColor:'#4fd1c5',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:10}}},
+    scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},
+            y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   const sel=document.getElementById('radarSelect');
   sel.innerHTML='';
   [...entries].reverse().forEach((e,i)=>{
@@ -511,20 +521,15 @@ function renderDashboard(){
   });
   sel.value=entries.length-1;
   buildRadar(last);
-
   if(chartBar) chartBar.destroy();
-  chartBar=new Chart(document.getElementById('chartBar'),{
-    type:'bar',
-    data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],
-      datasets:[{label:'Average',data:[ca,oa,da,va],
-        backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],
-        borderRadius:6,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
+  chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{
+    labels:['Confidence','Objection H.','Delivery','Value Selling'],
+    datasets:[{label:'Average',data:[ca,oa,da,va],
+      backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],
+      borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},
-              y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}
-  });
-
+              y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   buildThemeClusters(entries);
 }
 
@@ -537,23 +542,21 @@ function updateRadar(){
 function buildRadar(entry){
   if(chartRadar) chartRadar.destroy();
   const tc='#5a5a72',gc='rgba(255,255,255,0.05)';
-  chartRadar=new Chart(document.getElementById('chartRadar'),{
-    type:'radar',
-    data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],
-      datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,
-        data:[entry.confidence||0,entry.objection||0,entry.delivery||0,entry.valuesell||0],
-        borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',
-        pointBackgroundColor:'#7c6dfa',pointRadius:5}]},
+  chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{
+    labels:['Confidence','Objection H.','Delivery','Value Selling'],
+    datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,
+      data:[entry.confidence||0,entry.objection||0,entry.delivery||0,entry.valuesell||0],
+      borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',
+      pointBackgroundColor:'#7c6dfa',pointRadius:5}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},
       scales:{r:{min:0,max:10,
         ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},
         grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},
-        angleLines:{color:gc}}}}
-  });
+        angleLines:{color:gc}}}}});
 }
 
-// ── Theme clusters ────────────────────────────────────────────────────────────
+// ── Theme clusters ─────────────────────────────────────────────────────────────
 const THEME_MAP={
   'Value Selling':['value','pain','business impact','roi','outcome','benefit','problem','cost','revenue','anchor','tie','commercial','justify','priority','goal','result','success'],
   'Demo Flow':['transition','flow','demo','next','section','move','navigate','structure','story','narrative','show','walk','sequence','pacing','timing','agenda'],
@@ -562,7 +565,6 @@ const THEME_MAP={
   'Questioning Technique':['question','ask','probe','discovery','situational','implication','qbs','understand','clarify','explore','uncover','diagnose','need','payoff','open']
 };
 const THEME_COLORS={'Value Selling':'#4fd1c5','Demo Flow':'#7c6dfa','Technical Depth':'#63b3ed','Objection Handling':'#f56565','Questioning Technique':'#ed8936'};
-
 function classifyTip(tip){
   const lower=tip.toLowerCase();
   const scores={};
@@ -570,7 +572,6 @@ function classifyTip(tip){
   const best=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
   return best&&best[1]>0?best[0]:'Demo Flow';
 }
-
 function buildThemeClusters(entries){
   const wrap=document.getElementById('wordcloud-wrap');
   if(!wrap) return;
@@ -586,14 +587,7 @@ function buildThemeClusters(entries){
     const col=THEME_COLORS[name];
     const tipHtml=tips.slice(0,3).map(t=>`<div class="theme-tip">${t.slice(0,80)}${t.length>80?'…':''}</div>`).join('');
     const more=tips.length>3?`<div style="font-size:10px;color:var(--text3);margin-left:140px;margin-bottom:8px;">+${tips.length-3} more</div>`:'';
-    return `<div class="theme-cluster">
-      <div class="theme-row">
-        <span class="theme-name">${name}</span>
-        <div class="theme-bar-wrap"><div class="theme-bar" style="width:${pct}%;background:${col}"></div></div>
-        <span class="theme-count">${tips.length}</span>
-      </div>
-      ${tips.length?`<div class="theme-tips">${tipHtml}</div>${more}`:'<div style="margin-left:140px;margin-bottom:10px;font-size:11px;color:var(--text3);">No tips yet</div>'}
-    </div>`;
+    return`<div class="theme-cluster"><div class="theme-row"><span class="theme-name">${name}</span><div class="theme-bar-wrap"><div class="theme-bar" style="width:${pct}%;background:${col}"></div></div><span class="theme-count">${tips.length}</span></div>${tips.length?`<div class="theme-tips">${tipHtml}</div>${more}`:'<div style="margin-left:140px;margin-bottom:10px;font-size:11px;color:var(--text3);">No tips yet</div>'}</div>`;
   }).join('');
 }
 
@@ -633,11 +627,9 @@ function exportCSV(){
   const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(!entries.length){alert('No entries to export.');return;}
   const header='Date,Prospect,Series,Session,Total,Confidence,Objection,Delivery,ValueSelling,Tips,Strengths,Fix';
-  const rows=entries.map(e=>[
-    e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,
-    e.confidence,e.objection,e.delivery,e.valuesell||0,
-    `"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`
-  ].join(','));
+  const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,
+    e.session||1,e.total||1,e.confidence,e.objection,e.delivery,e.valuesell||0,
+    `"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));
   a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;
@@ -646,464 +638,26 @@ function exportCSV(){
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
-  // Migrate old entries
+  // Migrate old entries — fill any missing fields safely
   const raw=getEntries();
   const migrated=raw.map(e=>({
     date:e.date||'',prospect:e.prospect||'',series:e.series||'',
     session:e.session||1,total:e.total||1,
-    confidence:parseFloat(e.confidence)||0,objection:parseFloat(e.objection)||0,
-    delivery:parseFloat(e.delivery)||0,valuesell:parseFloat(e.valuesell)||0,
-    tips:Array.isArray(e.tips)?e.tips:[],strengths:Array.isArray(e.strengths)?e.strengths:[],
-    fix:e.fix||'',id:e.id||Date.now()
-  }));
-  saveEntries(migrated);
-
-  // Wire overlay close on backdrop click
-  document.querySelectorAll('.overlay').forEach(el=>{
-    el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open');});
-  });
-
-  const s=getSheetUrl();
-  if(s) document.getElementById('sheetsUrl').value=s;
-  renderDashboard();
-});
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#080810;--surface:#0f0f1a;--surface2:#16162a;--surface3:#1e1e35;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);--accent:#7c6dfa;--accent-dim:rgba(124,109,250,0.15);--red:#f56565;--red-dim:rgba(245,101,101,0.12);--green:#48bb78;--green-dim:rgba(72,187,120,0.12);--amber:#ed8936;--amber-dim:rgba(237,137,54,0.12);--text:#e8e8f0;--text2:#9090a8;--text3:#5a5a72;--r:12px;--r-lg:16px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(124,109,250,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
-.app{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 24px 80px}
-header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.brand-eyebrow{font-family:'Geist Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:4px}
-.brand h1{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;letter-spacing:-0.01em;line-height:1.2}
-.brand-sub{font-size:12px;color:var(--text3);font-weight:300;margin-top:3px}
-.header-actions{display:flex;gap:10px;align-items:center}
-.setup-link{font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'Geist',sans-serif;padding:6px 10px;border-radius:6px;transition:color .15s,background .15s;text-decoration:underline;text-underline-offset:3px}
-.setup-link:hover{color:var(--text2);background:var(--surface2)}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-family:'Geist',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
-.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#6a5ce8;transform:translateY(-1px)}
-.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-outline:hover{background:var(--surface2);color:var(--text)}
-.btn-ghost{background:transparent;color:var(--text3);font-size:12px;padding:6px 10px}.btn-ghost:hover{color:var(--text2)}
-.nav{display:flex;gap:2px;margin-bottom:32px;background:var(--surface);padding:4px;border-radius:10px;border:1px solid var(--border);width:fit-content}
-.nav-tab{padding:7px 20px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:'Geist',sans-serif;transition:all .15s}
-.nav-tab.active{background:var(--accent);color:#fff}.nav-tab:hover:not(.active){color:var(--text);background:var(--surface2)}
-.section{display:none}.section.active{display:block;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
-.stat-card:hover{border-color:var(--border2)}
-.stat-accent{position:absolute;top:0;left:20px;width:32px;height:2px;border-radius:0 0 2px 2px}
-.sa-purple{background:var(--accent)}.sa-red{background:var(--red)}.sa-green{background:var(--green)}.sa-amber{background:var(--amber)}.sa-teal{background:#4fd1c5}
-.stat-label{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
-.stat-value{font-family:'Instrument Serif',serif;font-size:38px;font-weight:400;line-height:1}
-.stat-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:300}
-.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px}
-.chart-card.full{grid-column:1/-1}
-.chart-label{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
-.chart-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:16px}
-.chart-wrap{position:relative;height:210px}.radar-wrap{position:relative;height:240px}
-.radar-controls{margin-bottom:10px}
-.radar-controls select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Geist Mono',monospace;font-size:11px;padding:5px 10px;outline:none;cursor:pointer;max-width:100%}
-#wordcloud-wrap{min-height:180px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:10px 0}
-.wc-word{display:inline-block;font-family:'Geist',sans-serif;font-weight:500;border-radius:4px;padding:2px 5px;cursor:default;transition:opacity .2s}
-.wc-word:hover{opacity:.65!important}
-.log-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-.log-table{width:100%;border-collapse:collapse;font-size:13px}
-.log-table th{padding:12px 16px;text-align:left;font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2);font-weight:400}
-.log-table td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
-.log-table tr:last-child td{border-bottom:none}.log-table tr:hover td{background:var(--surface2)}
-.series-badge{display:inline-flex;align-items:center;gap:4px;background:var(--accent-dim);color:var(--accent);font-size:10px;font-family:'Geist Mono',monospace;padding:2px 8px;border-radius:20px;white-space:nowrap}
-.score-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:500;font-family:'Geist Mono',monospace}
-.score-high{background:var(--green-dim);color:var(--green)}.score-mid{background:var(--amber-dim);color:var(--amber)}.score-low{background:var(--red-dim);color:var(--red)}
-.del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:3px 7px;border-radius:5px;transition:all .15s}
-.del-btn:hover{color:var(--red);background:var(--red-dim)}
-.series-progress{display:flex;gap:3px;align-items:center}
-.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent)}.sp-dot.done{background:var(--accent)}
-.overlay{display:none;position:fixed;inset:0;background:rgba(8,8,16,0.9);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;overflow-x:hidden;padding:48px 32px 80px}
-.overlay.open{display:flex}
-.overlay-inner{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-lg);width:100%;max-width:840px;padding:40px;position:relative;margin:auto;min-width:0}
-.overlay-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:none;color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .15s}
-.overlay-close:hover{background:var(--surface3)}
-.overlay-inner h2{font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;margin-bottom:6px}
-.overlay-inner>p{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.6}
-.field-section{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:14px}
-.field-section h3{font-size:10px;font-weight:500;color:var(--text3);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);font-family:'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
-.field-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}.field-row:last-child{margin-bottom:0}
-.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}
-.field label{font-size:10px;color:var(--text3);font-family:'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
-.field input,.field select{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Geist',sans-serif;font-size:13px;outline:none;transition:border-color .15s;width:100%}
-.field input:focus,.field select:focus{border-color:var(--accent)}.field input::placeholder{color:var(--text3)}
-textarea{width:100%;min-height:200px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:14px;color:var(--text);font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.75;resize:vertical;outline:none;transition:border-color .15s}
-textarea:focus{border-color:var(--accent)}
-.sheets-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)}
-.sheets-row .field{flex:1;min-width:200px}
-.preview-card{background:var(--surface2);border:1px solid var(--accent);border-radius:var(--r-lg);padding:20px;margin-bottom:14px;display:none}
-.preview-card h3{font-size:10px;font-family:'Geist Mono',monospace;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
-.preview-grid{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}
-.pf label{display:block;font-size:10px;color:var(--text3);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
-.pf span{font-size:15px;font-weight:500}
-.preview-block{background:var(--surface);border-radius:8px;padding:10px 13px;font-size:11.5px;color:var(--text2);line-height:1.7;font-family:'Geist Mono',monospace;margin-bottom:8px}
-.preview-block strong{display:block;font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.alert{padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none;font-weight:500}
-.alert-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(72,187,120,.2)}
-.alert-error{background:var(--red-dim);color:var(--red);border:1px solid rgba(245,101,101,.2)}
-.empty{text-align:center;padding:70px 20px;color:var(--text3)}
-.empty-icon{font-size:36px;margin-bottom:14px}
-.empty h3{font-size:16px;font-weight:500;margin-bottom:6px;color:var(--text2)}
-.empty p{font-size:13px;line-height:1.6;font-weight:300}
-.setup-step{display:flex;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
-.setup-step:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px}
-.step-content{flex:1;min-width:0}.step-content h3{font-size:14px;font-weight:500;margin-bottom:5px}
-.step-content p{font-size:12.5px;color:var(--text2);line-height:1.65;font-weight:300}
-.code-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--green);margin-top:10px;line-height:1.8;overflow-x:auto;white-space:pre;max-width:100%;display:block;box-sizing:border-box}
-@media(max-width:700px){.charts-grid{grid-template-columns:1fr}.chart-card.full{grid-column:1}.stats-row{grid-template-columns:repeat(2,1fr)}}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-
-.btn-saving{background:#3a3a6a!important;color:var(--text2)!important;cursor:not-allowed!important;transform:none!important}
-.btn-saved{background:var(--green)!important;color:#fff!important;transform:none!important}
-.save-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text2);animation:pulse-dot 0.8s infinite alternate}
-@keyframes pulse-dot{from{opacity:0.3;transform:scale(0.8)}to{opacity:1;transform:scale(1.2)}}
-.theme-cluster{margin-bottom:10px}
-.theme-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.theme-name{font-family:'Geist Mono',monospace;font-size:10px;color:var(--text2);width:130px;flex-shrink:0;letter-spacing:.05em}
-.theme-bar-wrap{flex:1;background:var(--surface2);border-radius:3px;height:6px;overflow:hidden}
-.theme-bar{height:6px;border-radius:3px;transition:width .6s ease}
-.theme-count{font-family:'Geist Mono',monospace;font-size:10px;color:var(--text3);width:20px;text-align:right;flex-shrink:0}
-.theme-tips{margin-left:140px;margin-bottom:12px}
-.theme-tip{font-size:11px;color:var(--text3);line-height:1.6;padding:2px 0}
-.theme-tip::before{content:'→ ';color:var(--text3)}
-</style>
-</head>
-<body>
-
-<div class="app">
-<header>
-  <div class="brand">
-    <div class="brand-eyebrow">LearnUpon · SE Performance</div>
-    <h1>Demo Tracker</h1>
-    <div class="brand-sub">Nikhil · Senior Solutions Engineer · UK &amp; Ireland</div>
-  </div>
-  <div class="header-actions" id="header-actions">
-    <button class="setup-link" onclick="openSetup()">Setup Guide</button>
-    <button class="btn btn-outline" onclick="exportCSV()">&#8595; Export CSV</button>
-    <button class="btn btn-primary" onclick="openAddModal()">+ Add Entry</button>
-  </div>
-</header>
-
-<nav class="nav">
-  <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
-  <button class="nav-tab" onclick="switchTab('log')">Call Log</button>
-</nav>
-
-<div class="section active" id="tab-dashboard">
-  <div class="stats-row">
-    <div class="stat-card"><div class="stat-accent sa-purple"></div><div class="stat-label">Total Calls</div><div class="stat-value" id="stat-calls">0</div><div class="stat-sub">logged demos</div></div>
-    <div class="stat-card"><div class="stat-accent sa-purple"></div><div class="stat-label">Avg Confidence</div><div class="stat-value" id="stat-confidence">-</div><div class="stat-sub" id="stat-confidence-trend">no data</div></div>
-    <div class="stat-card"><div class="stat-accent sa-red"></div><div class="stat-label">Avg Objection H.</div><div class="stat-value" id="stat-objection">-</div><div class="stat-sub" id="stat-objection-trend">no data</div></div>
-    <div class="stat-card"><div class="stat-accent sa-green"></div><div class="stat-label">Avg Delivery</div><div class="stat-value" id="stat-delivery">-</div><div class="stat-sub" id="stat-delivery-trend">no data</div></div>
-    <div class="stat-card"><div class="stat-accent sa-teal"></div><div class="stat-label">Avg Value Selling</div><div class="stat-value" id="stat-valuesell">-</div><div class="stat-sub" id="stat-valuesell-trend">no data</div></div><div class="stat-card"><div class="stat-accent sa-amber"></div><div class="stat-label">Last Call</div><div class="stat-value" style="font-family:'Geist',sans-serif;font-size:15px;padding-top:8px;font-weight:500;" id="stat-lastcall">-</div><div class="stat-sub" id="stat-lastprospect">no entries</div></div>
-  </div>
-  <div id="dash-empty" class="empty" style="display:none;"><div class="empty-icon">&#128202;</div><h3>No data yet</h3><p>Add your first entry using the tracker block from your coaching prompt.</p><br><button class="btn btn-primary" onclick="openAddModal()">+ Add First Entry</button></div>
-  <div id="dash-charts">
-    <div class="charts-grid">
-      <div class="chart-card full"><div class="chart-label">Over time</div><div class="chart-title">Score Trends</div><div class="chart-wrap"><canvas id="chartTrend"></canvas></div></div>
-      <div class="chart-card"><div class="chart-label">Skill breakdown</div><div class="chart-title">Call Radar</div><div class="radar-controls"><select id="radarSelect" onchange="updateRadar()"></select></div><div class="radar-wrap"><canvas id="chartRadar"></canvas></div></div>
-      <div class="chart-card"><div class="chart-label">All metrics</div><div class="chart-title">Score Distribution</div><div class="chart-wrap"><canvas id="chartBar"></canvas></div></div>
-      <div class="chart-card full"><div class="chart-label">Coaching intelligence</div><div class="chart-title">Recurring Themes</div><div id="wordcloud-wrap"></div></div>
-    </div>
-  </div>
-</div>
-
-<div class="section" id="tab-log">
-  <div id="log-empty" class="empty" style="display:none;"><div class="empty-icon">&#128203;</div><h3>No calls logged</h3><p>Add your first entry to start tracking.</p></div>
-  <div class="log-table-wrap" id="log-table-wrap">
-    <table class="log-table">
-      <thead><tr><th>Date</th><th>Prospect</th><th>Series</th><th>Session</th><th>Confidence</th><th>Objection H.</th><th>Delivery</th><th>Value Sell</th><th>Fix</th><th></th></tr></thead>
-      <tbody id="log-tbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<div class="overlay" id="add-modal">
-  <div class="overlay-inner">
-    <button class="overlay-close" onclick="closeAddModal()">&#10005;</button>
-    <h2>Add Entry</h2>
-    <p>Paste the Performance Tracker Input block from your coaching output, or fill in manually.</p>
-    <div class="sheets-row">
-      <div class="field"><label>Google Sheets URL</label><input type="text" id="sheetsUrl" placeholder="Paste Apps Script Web App URL" oninput="saveSheetUrl()"></div>
-      <button class="btn btn-ghost" onclick="testConnection()">Test</button>
-    </div>
-    <div class="field-section">
-      <h3>Paste Tracker Block</h3>
-      <textarea id="pasteInput" placeholder="=== TRACKER INPUT FORMAT ===
-Call Date: 2026-04-01
-Prospect: Acme Corp
-Series Name: Acme Deal
-Session: 1
-Total Sessions: 3
-Confidence Score: 8
-Objection Handling Score: 7
-Overall Delivery Rating: 7
-
-Top 3 Coaching Tips:
-1. Anchor every feature to a specific pain before clicking
-2. Use silence after a value statement
-3. Ask a QBS implication question before moving on
-
-Strengths:
-- Strong product knowledge on reporting module
-- Good use of prospect language
-
-One thing to fix before next call:
-- Slow down after the aha moment"></textarea>
-      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
-        <button class="btn btn-outline" onclick="parseInput()">Parse and Preview</button>
-        <button class="btn btn-ghost" onclick="clearInput()">Clear</button>
-        <span id="parse-status" style="font-size:11px;color:var(--text3);font-family:'Geist Mono',monospace;"></span>
-      </div>
-    </div>
-    <div class="field-section">
-      <h3>Or Fill Manually</h3>
-      <div class="field-row">
-        <div class="field"><label>Call Date</label><input type="date" id="m-date"></div>
-        <div class="field"><label>Prospect</label><input type="text" id="m-prospect" placeholder="e.g. Wayve"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Series Name</label><input type="text" id="m-series" placeholder="e.g. Wayve Deal (optional)"></div>
-        <div class="field"><label>Session</label><input type="number" id="m-session" placeholder="1" min="1"></div>
-        <div class="field"><label>Total Sessions</label><input type="number" id="m-total" placeholder="1" min="1"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Confidence (0-10)</label><input type="number" id="m-confidence" min="0" max="10" placeholder="8"></div>
-        <div class="field"><label>Objection H. (0-10)</label><input type="number" id="m-objection" min="0" max="10" placeholder="7"></div>
-        <div class="field"><label>Delivery (0-10)</label><input type="number" id="m-delivery" min="0" max="10" placeholder="7"></div>
-      </div>
-      <div class="field-row"><div class="field" style="flex:1 1 100%;"><label>Top Tips (one per line)</label><textarea id="m-tips" style="min-height:70px;" placeholder="Anchor features to pain&#10;Use silence after value statements"></textarea></div></div>
-      <div class="field-row"><div class="field" style="flex:1 1 100%;"><label>Strengths (one per line)</label><textarea id="m-strengths" style="min-height:60px;" placeholder="Strong product knowledge&#10;Good use of prospect language"></textarea></div></div>
-      <div class="field-row"><div class="field" style="flex:1 1 100%;"><label>One Thing to Fix</label><input type="text" id="m-fix" placeholder="Slow down after the aha moment"></div></div>
-      <button class="btn btn-outline" onclick="fillFromManual()" style="margin-top:8px;">Use Manual Entry</button>
-    </div>
-    <div class="alert alert-success" id="alert-success">Entry saved.</div>
-    <div class="alert alert-error" id="alert-error">Could not parse. Check the format matches the tracker block.</div>
-    <div class="preview-card" id="preview-card">
-      <h3>Preview - confirm before saving</h3>
-      <div class="preview-grid" id="preview-grid"></div>
-      <div id="preview-extras"></div>
-      <div style="display:flex;gap:10px;margin-top:14px;">
-        <button class="btn btn-primary" id="save-btn" onclick="saveEntry()">Save Entry</button>
-        <button class="btn btn-ghost" onclick="cancelPreview()">Cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="setup-modal">
-  <div class="overlay-inner">
-    <button class="overlay-close" onclick="closeSetup()">&#10005;</button>
-    <h2>Setup Guide</h2>
-    <p>The app stores data in your browser. To sync to Google Sheets and share with your manager, follow these steps.</p>
-    <div class="setup-step"><div class="step-num">1</div><div class="step-content"><h3>Create a Google Sheet</h3><p>Go to sheets.google.com and create a new sheet. Add this header row in row 1:</p><div class="code-block">Date | Prospect | Series | Session | TotalSessions | Confidence | Objection | Delivery | Tips | Strengths | Fix | Timestamp</div></div></div>
-    <div class="setup-step"><div class="step-num">2</div><div class="step-content"><h3>Open Apps Script and paste this code</h3><p>In your Sheet click Extensions then Apps Script. Delete all existing code and paste exactly:</p><div class="code-block">function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  if (!e || !e.parameter) {
-    return ContentService
-      .createTextOutput(JSON.stringify({status:'ok',message:'Script is live'}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  var p = e.parameter;
-  if (p.action === 'append') {
-    sheet.appendRow([
-      p.date||'', p.prospect||'', p.series||'',
-      Number(p.session)||1, Number(p.total)||1,
-      Number(p.confidence)||0, Number(p.objection)||0,
-      Number(p.delivery)||0,
-      p.tips||'', p.strengths||'', p.fix||'',
-      new Date().toISOString()
-    ]);
-    return ContentService
-      .createTextOutput(JSON.stringify({status:'ok'}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  var data = sheet.getDataRange().getValues();
-  return ContentService
-    .createTextOutput(JSON.stringify({rows:data}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</div></div></div>
-    <div class="setup-step"><div class="step-num">3</div><div class="step-content"><h3>Deploy as Web App</h3><p>Click Deploy, then New deployment, then Web app. Set Execute as: Me, Who has access: Anyone. Copy the URL and paste it in your browser. You should see <code style="color:var(--green);font-family:'Geist Mono',monospace;font-size:11px;">{"status":"ok","message":"Script is live"}</code> to confirm it works.</p></div></div>
-    <div class="setup-step"><div class="step-num">4</div><div class="step-content"><h3>Connect the app</h3><p>Click Add Entry and paste the Web App URL into the Google Sheets URL field. Hit Test to confirm a row appears in your Sheet.</p></div></div>
-    <div class="setup-step"><div class="step-num">5</div><div class="step-content"><h3>Host on GitHub Pages</h3><p>Upload index.html to a GitHub repository. Go to Settings, then Pages, then Branch: main, then / (root), then Save. Your tracker will be live at yourusername.github.io/repo-name within a minute.</p></div></div>
-  </div>
-</div>
-
-<script>
-const STORE_KEY='se_tracker_v2',SHEET_KEY='se_sheet_url';
-function getEntries(){
-  try{
-    const v2=JSON.parse(localStorage.getItem('se_tracker_v2')||'[]');
-    const v1=JSON.parse(localStorage.getItem('se_tracker_entries')||'[]');
-    const keys=new Set(v2.map(e=>e.date+'|'+e.prospect));
-    const merged=[...v2,...v1.filter(e=>!keys.has(e.date+'|'+e.prospect))];
-    if(v1.length>0){localStorage.setItem('se_tracker_v2',JSON.stringify(merged));localStorage.removeItem('se_tracker_entries');}
-    return merged;
-  }catch(e){return[];}
-}
-function saveEntries(a){localStorage.setItem('se_tracker_v2',JSON.stringify(a))}
-function getSheetUrl(){return localStorage.getItem(SHEET_KEY)||''}
-function saveSheetUrl(){localStorage.setItem(SHEET_KEY,document.getElementById('sheetsUrl').value.trim())}
-function switchTab(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.querySelectorAll('.nav-tab')[['dashboard','log'].indexOf(id)].classList.add('active');if(id==='dashboard')renderDashboard();if(id==='log')renderLog()}
-function openAddModal(){document.getElementById('add-modal').classList.add('open');const s=getSheetUrl();if(s)document.getElementById('sheetsUrl').value=s}
-function closeAddModal(){document.getElementById('add-modal').classList.remove('open')}
-function openSetup(){document.getElementById('setup-modal').classList.add('open')}
-function closeSetup(){document.getElementById('setup-modal').classList.remove('open')}
-document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
-let pendingEntry=null;
-function parseTrackerBlock(text){
-  const get=(p,fb='')=>{const m=text.match(p);return m?m[1].trim():fb};
-  const date=get(/Call Date:\s*([^\n]+)/i),prospect=get(/Prospect:\s*([^\n]+)/i);
-  if(!date||!prospect)return null;
-  const series=get(/Series Name:\s*([^\n]+)/i,'');
-  const session=parseInt(get(/^Session:\s*([^\n]+)/im,'1'))||1;
-  const total=parseInt(get(/Total Sessions:\s*([^\n]+)/i,'1'))||1;
-  const confidence=parseFloat(get(/Confidence Score:\s*([^\n]+)/i))||0;
-  const objection=parseFloat(get(/Objection Handling Score:\s*([^\n]+)/i))||0;
-  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i))||0;const valuesell=parseFloat(get(/Value Selling(?:\s*Score)?:\s*([^\n]+)/i))||0;
-  const tB=text.match(/Top 3 Coaching Tips:([\s\S]*?)(?:Strengths:|One thing to fix|$)/i);
-  const tips=tB?tB[1].split('\n').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
-  const sB=text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
-  const strengths=sB?sB[1].split('\n').map(l=>l.replace(/^\s*[-]\s*/,'').trim()).filter(Boolean):[];
-  const fix=get(/One thing to fix[^:]*:\s*[-]?\s*([^\n]+)/i);
-  return{date,prospect,series:series||'',session:session||1,total:total||1,confidence:confidence||0,objection:objection||0,delivery:delivery||0,valuesell:valuesell||0,tips:tips||[],strengths:strengths||[],fix:fix||'',id:Date.now()}
-}
-function parseInput(){const e=parseTrackerBlock(document.getElementById('pasteInput').value);if(!e){showAlert('error');return}pendingEntry=e;showPreview(e);document.getElementById('parse-status').textContent='Parsed OK'}
-function fillFromManual(){const e={date:document.getElementById('m-date').value,prospect:document.getElementById('m-prospect').value.trim(),series:document.getElementById('m-series').value.trim(),session:parseInt(document.getElementById('m-session').value)||1,total:parseInt(document.getElementById('m-total').value)||1,confidence:parseFloat(document.getElementById('m-confidence').value)||0,objection:parseFloat(document.getElementById('m-objection').value)||0,delivery:parseFloat(document.getElementById('m-delivery').value)||0,tips:document.getElementById('m-tips').value.split('\n').map(l=>l.trim()).filter(Boolean),strengths:document.getElementById('m-strengths').value.split('\n').map(l=>l.trim()).filter(Boolean),fix:document.getElementById('m-fix').value.trim(),id:Date.now()};if(!e.date||!e.prospect){showAlert('error');return}pendingEntry=e;showPreview(e)}
-function showPreview(e){document.getElementById('preview-card').style.display='block';document.getElementById('preview-grid').innerHTML=`<div class="pf"><label>Date</label><span>${e.date}</span></div><div class="pf"><label>Prospect</label><span>${e.prospect}</span></div>${e.series?`<div class="pf"><label>Series</label><span>${e.series}</span></div><div class="pf"><label>Session</label><span>${e.session} of ${e.total}</span></div>`:''}<div class="pf"><label>Confidence</label><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}/10</span></div><div class="pf"><label>Objection H.</label><span class="score-pill ${scoreClass(e.objection)}">${e.objection}/10</span></div><div class="pf"><label>Delivery</label><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}/10</span></div>`;let ex='';if(e.tips.length)ex+=`<div class="preview-block"><strong>Tips</strong>${e.tips.map((t,i)=>`${i+1}. ${t}`).join('<br>')}</div>`;if(e.strengths.length)ex+=`<div class="preview-block"><strong>Strengths</strong>${e.strengths.map(s=>`- ${s}`).join('<br>')}</div>`;if(e.fix)ex+=`<div class="preview-block"><strong>One Thing to Fix</strong>${e.fix}</div>`;document.getElementById('preview-extras').innerHTML=ex}
-function cancelPreview(){document.getElementById('preview-card').style.display='none';pendingEntry=null}
-function clearInput(){document.getElementById('pasteInput').value='';document.getElementById('preview-card').style.display='none';document.getElementById('parse-status').textContent='';pendingEntry=null}
-function pingSheet(url,params){return new Promise(resolve=>{const full=url+'?'+params.toString();const img=new Image();img.onload=img.onerror=()=>resolve(true);img.src=full;fetch(full,{method:'GET',mode:'no-cors'}).catch(()=>{});setTimeout(()=>resolve(true),3000)})}
-async function saveEntry(){
-  if(!pendingEntry)return;
-  const btn=document.getElementById('save-btn');
-  btn.disabled=true;
-  btn.className='btn btn-saving';
-  btn.innerHTML='<span class="save-dot"></span> Saving…';
-  const entries=getEntries();
-  entries.push(pendingEntry);
-  saveEntries(entries);
-  const url=getSheetUrl();
-  if(url){
-    const params=new URLSearchParams({action:'append',date:pendingEntry.date,prospect:pendingEntry.prospect,series:pendingEntry.series||'',session:pendingEntry.session||1,total:pendingEntry.total||1,confidence:pendingEntry.confidence,objection:pendingEntry.objection,delivery:pendingEntry.delivery,valuesell:pendingEntry.valuesell||0,tips:(pendingEntry.tips||[]).join(' | '),strengths:(pendingEntry.strengths||[]).join(' | '),fix:pendingEntry.fix||''});
-    await pingSheet(url,params);
-  }
-  btn.className='btn btn-saved';
-  btn.innerHTML='✓ Saved';
-  btn.disabled=true;
-  await new Promise(r=>setTimeout(r,900));
-  pendingEntry=null;
-  document.getElementById('preview-card').style.display='none';
-  document.getElementById('pasteInput').value='';
-  btn.className='btn btn-primary';
-  btn.innerHTML='Save Entry';
-  btn.disabled=false;
-  closeAddModal();
-  renderDashboard();
-}
-async function testConnection(){const url=getSheetUrl();if(!url){alert('Paste your Apps Script URL first.');return}const params=new URLSearchParams({action:'append',date:new Date().toISOString().slice(0,10),prospect:'Connection Test',series:'',session:1,total:1,confidence:0,objection:0,delivery:0,tips:'test',strengths:'test',fix:'test'});await pingSheet(url,params);alert('Request fired. Check your Google Sheet for a Connection Test row.')}
-function showAlert(type){const el=document.getElementById('alert-'+type);el.style.display='block';setTimeout(()=>el.style.display='none',2800)}
-function scoreClass(n){return n>=8?'score-high':n>=5?'score-mid':'score-low'}
-function avg(arr){if(!arr.length)return null;return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*10)/10}
-function trendStr(entries,key){if(entries.length<2)return 'only one entry';const last=parseFloat(entries[entries.length-1][key])||0;const prev=parseFloat(entries[entries.length-2][key])||0;const d=Math.round((last-prev)*10)/10;return d>0?`up ${d} from last`:d<0?`down ${Math.abs(d)} from last`:'same as last call'}
-let chartTrend,chartRadar,chartBar;
-function renderDashboard(){
-  try{
-  const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));
-.slice(0,120));
-);
-));
-?.style.display);
-  document.getElementById('stat-calls').textContent=entries.length;
-  if(!entries.length){document.getElementById('dash-empty').style.display='block';document.getElementById('dash-charts').style.display='none';return}
-  document.getElementById('dash-empty').style.display='none';document.getElementById('dash-charts').style.display='block';
-  const ca=avg(entries.map(e=>e.confidence)),oa=avg(entries.map(e=>e.objection)),da=avg(entries.map(e=>e.delivery)),va=avg(entries.map(e=>e.valuesell||0)),last=entries[entries.length-1];
-  document.getElementById('stat-confidence').textContent=ca??'-';document.getElementById('stat-objection').textContent=oa??'-';document.getElementById('stat-delivery').textContent=da??'-';document.getElementById('stat-valuesell').textContent=va??'-';
-  document.getElementById('stat-confidence-trend').textContent=trendStr(entries,'confidence');document.getElementById('stat-objection-trend').textContent=trendStr(entries,'objection');document.getElementById('stat-delivery-trend').textContent=trendStr(entries,'delivery');document.getElementById('stat-valuesell-trend').textContent=trendStr(entries,'valuesell');
-  document.getElementById('stat-lastcall').textContent=last.date;document.getElementById('stat-lastprospect').textContent=last.series?`${last.series} S${last.session}`:last.prospect;
-  const labels=entries.map(e=>e.date.slice(5)+(e.series?` S${e.session}`:''));
-  const gc='rgba(255,255,255,0.05)',tc='#5a5a72';
-  if(chartTrend)chartTrend.destroy();
-  chartTrend=new Chart(document.getElementById('chartTrend'),{type:'line',data:{labels,datasets:[{label:'Confidence',data:entries.map(e=>e.confidence),borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.07)',tension:0.4,fill:true,pointRadius:4,pointHoverRadius:6},{label:'Objection H.',data:entries.map(e=>e.objection),borderColor:'#f56565',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6},{label:'Delivery',data:entries.map(e=>e.delivery),borderColor:'#48bb78',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6},{label:'Value Selling',data:entries.map(e=>e.valuesell||0),borderColor:'#4fd1c5',backgroundColor:'transparent',tension:0.4,fill:false,pointRadius:4,pointHoverRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:10}}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
-  const sel=document.getElementById('radarSelect');sel.innerHTML='';[...entries].reverse().forEach((e,i)=>{const opt=document.createElement('option');opt.value=entries.length-1-i;opt.textContent=e.series?`${e.prospect} S${e.session} (${e.date})`:`${e.prospect} (${e.date})`;sel.appendChild(opt)});sel.value=entries.length-1;buildRadar(last);
-  if(chartBar)chartBar.destroy();
-  chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:'Average',data:[ca,oa,da,va],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
-  buildThemeClusters(entries);
-  }catch(err){console.error('Dashboard render error:',err);
-);}
-}
-function updateRadar(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));buildRadar(entries[parseInt(document.getElementById('radarSelect').value)])}
-function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery,entry.valuesell||0],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
-const THEME_MAP={
-  'Value Selling':['value','pain','business impact','roi','outcome','benefit','problem','cost','revenue','anchor','tie','commercial','justify','priority','goal','result','success'],
-  'Demo Flow':['transition','flow','demo','next','section','move','navigate','structure','story','narrative','show','walk','sequence','pacing','timing','agenda'],
-  'Technical Depth':['technical','integration','api','scim','data','feature','config','setup','portal','admin','reporting','module','field','system','platform','architecture'],
-  'Objection Handling':['objection','concern','pushback','challenge','worry','risk','hesitation','reframe','reversal','handle','address','respond','question','doubt','resistance'],
-  'Questioning Technique':['question','ask','probe','discovery','situational','implication','qbs','understand','clarify','explore','uncover','diagnose','need','payoff','open']
-};
-const THEME_COLORS={'Value Selling':'#4fd1c5','Demo Flow':'#7c6dfa','Technical Depth':'#63b3ed','Objection Handling':'#f56565','Questioning Technique':'#ed8936'};
-function classifyTip(tip){const lower=tip.toLowerCase();const scores={};Object.entries(THEME_MAP).forEach(([theme,kws])=>{scores[theme]=kws.filter(kw=>lower.includes(kw)).length});const best=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];return best&&best[1]>0?best[0]:'Demo Flow'}
-function buildThemeClusters(entries){
-  const wrap=document.getElementById('theme-cluster-wrap');
-  if(!wrap)return;
-  const themes={'Value Selling':[],'Demo Flow':[],'Technical Depth':[],'Objection Handling':[],'Questioning Technique':[]};
-  entries.forEach(e=>{(e.tips||[]).forEach(tip=>{if(tip.trim()){const t=classifyTip(tip);themes[t].push(tip)}})});
-  const max=Math.max(...Object.values(themes).map(t=>t.length),1);
-  if(Object.values(themes).every(t=>t.length===0)){wrap.innerHTML='<span style="color:var(--text3);font-size:12px;">Add more entries to see coaching themes emerge.</span>';return}
-  wrap.innerHTML=Object.entries(themes).map(([name,tips])=>{
-    const pct=Math.round(tips.length/max*100);
-    const col=THEME_COLORS[name];
-    const tipHtml=tips.slice(0,3).map(t=>`<div class="theme-tip">${t.slice(0,80)}${t.length>80?'…':''}</div>`).join('');
-    const more=tips.length>3?`<div style="font-size:10px;color:var(--text3);margin-left:140px;margin-bottom:8px;">+${tips.length-3} more</div>`:'';
-    return`<div class="theme-cluster"><div class="theme-row"><span class="theme-name">${name}</span><div class="theme-bar-wrap"><div class="theme-bar" style="width:${pct}%;background:${col}"></div></div><span class="theme-count">${tips.length}</span></div>${tips.length?`<div class="theme-tips">${tipHtml}</div>${more}`:'<div style="margin-left:140px;margin-bottom:10px;font-size:11px;color:var(--text3);">No tips yet</div>'}</div>`
-  }).join('');
-}
-function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td><span class="score-pill ${scoreClass(e.valuesell||0)}">${e.valuesell||0}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
-function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveEntries(getEntries().filter(e=>e.id!==id));renderLog();renderDashboard()}
-function exportCSV(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));if(!entries.length){alert('No entries to export.');return}const header='Date,Prospect,Series,Session,TotalSessions,Confidence,Objection,Delivery,Tips,Strengths,Fix';const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,e.confidence,e.objection,e.delivery,`"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;a.click()}
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  try{
-    const raw=localStorage.getItem('se_tracker_v2')||localStorage.getItem('se_tracker_entries')||'[]';
-?.slice(0,120));
-?.slice(0,120));
-.join(', '));
-    const parsed=JSON.parse(raw);
-    if(parsed.length>0){
-.slice(0,200));}
-  }catch(e){
-}
-
-  // Migrate old entries that may be missing newer fields
-  const raw=getEntries();
-  const migrated=raw.map(e=>({
-    date:e.date||'',
-    prospect:e.prospect||'',
-    series:e.series||'',
-    session:e.session||1,
-    total:e.total||1,
     confidence:parseFloat(e.confidence)||0,
     objection:parseFloat(e.objection)||0,
     delivery:parseFloat(e.delivery)||0,
     valuesell:parseFloat(e.valuesell)||0,
     tips:Array.isArray(e.tips)?e.tips:[],
     strengths:Array.isArray(e.strengths)?e.strengths:[],
-    fix:e.fix||'',
-    id:e.id||Date.now()
+    fix:e.fix||'',id:e.id||Date.now()
   }));
   saveEntries(migrated);
+  // Wire overlay backdrop close
+  document.querySelectorAll('.overlay').forEach(el=>{
+    el.addEventListener('click',ev=>{if(ev.target===el) el.classList.remove('open');});
+  });
   const s=getSheetUrl();
-  if(s)document.getElementById('sheetsUrl').value=s;
+  if(s) document.getElementById('sheetsUrl').value=s;
   renderDashboard();
 });
 </script>
