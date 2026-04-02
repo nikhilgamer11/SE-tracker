@@ -117,11 +117,6 @@ textarea:focus{border-color:var(--accent)}
 </head>
 <body>
 
-<div id="debug-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a0a0a;border-top:1px solid #f56565;padding:12px 20px;font-family:monospace;font-size:11px;color:#f56565;z-index:999;max-height:200px;overflow-y:auto;">
-  <strong>DEBUG MODE</strong> — <button onclick="document.getElementById('debug-panel').style.display='none'" style="background:none;border:none;color:#f56565;cursor:pointer;font-size:11px;text-decoration:underline;">close</button>
-  <pre id="debug-output" style="margin-top:8px;color:#48bb78;white-space:pre-wrap;word-break:break-all;"></pre>
-</div>
-
 <div class="app">
 <header>
   <div class="brand">
@@ -147,7 +142,7 @@ textarea:focus{border-color:var(--accent)}
     <div class="stat-card"><div class="stat-accent sa-purple"></div><div class="stat-label">Avg Confidence</div><div class="stat-value" id="stat-confidence">-</div><div class="stat-sub" id="stat-confidence-trend">no data</div></div>
     <div class="stat-card"><div class="stat-accent sa-red"></div><div class="stat-label">Avg Objection H.</div><div class="stat-value" id="stat-objection">-</div><div class="stat-sub" id="stat-objection-trend">no data</div></div>
     <div class="stat-card"><div class="stat-accent sa-green"></div><div class="stat-label">Avg Delivery</div><div class="stat-value" id="stat-delivery">-</div><div class="stat-sub" id="stat-delivery-trend">no data</div></div>
-    <div class="stat-card"><div class="stat-accent sa-amber"></div><div class="stat-label">Last Call</div><div class="stat-value" style="font-family:'Geist',sans-serif;font-size:15px;padding-top:8px;font-weight:500;" id="stat-lastcall">-</div><div class="stat-sub" id="stat-lastprospect">no entries</div></div>
+    <div class="stat-card"><div class="stat-accent sa-teal"></div><div class="stat-label">Avg Value Selling</div><div class="stat-value" id="stat-valuesell">-</div><div class="stat-sub" id="stat-valuesell-trend">no data</div></div><div class="stat-card"><div class="stat-accent sa-amber"></div><div class="stat-label">Last Call</div><div class="stat-value" style="font-family:'Geist',sans-serif;font-size:15px;padding-top:8px;font-weight:500;" id="stat-lastcall">-</div><div class="stat-sub" id="stat-lastprospect">no entries</div></div>
   </div>
   <div id="dash-empty" class="empty" style="display:none;"><div class="empty-icon">&#128202;</div><h3>No data yet</h3><p>Add your first entry using the tracker block from your coaching prompt.</p><br><button class="btn btn-primary" onclick="openAddModal()">+ Add First Entry</button></div>
   <div id="dash-charts">
@@ -362,10 +357,10 @@ let chartTrend,chartRadar,chartBar;
 function renderDashboard(){
   try{
   const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));
-  showDebug('renderDashboard: '+entries.length+' entries. First: '+JSON.stringify(entries[0]).slice(0,120));
-  showDebug('Chart.js loaded: '+(typeof Chart !== "undefined"));
-  showDebug('chartTrend canvas: '+(!!document.getElementById('chartTrend')));
-  showDebug('dash-charts display: '+document.getElementById('dash-charts')?.style.display);
+.slice(0,120));
+);
+));
+?.style.display);
   document.getElementById('stat-calls').textContent=entries.length;
   if(!entries.length){document.getElementById('dash-empty').style.display='block';document.getElementById('dash-charts').style.display='none';return}
   document.getElementById('dash-empty').style.display='none';document.getElementById('dash-charts').style.display='block';
@@ -381,7 +376,8 @@ function renderDashboard(){
   if(chartBar)chartBar.destroy();
   chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:'Average',data:[ca,oa,da,va],backgroundColor:['rgba(124,109,250,0.7)','rgba(245,101,101,0.7)','rgba(72,187,120,0.7)','rgba(79,209,197,0.7)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc,font:{family:'Geist Mono',size:10}},grid:{color:gc}},y:{min:0,max:10,ticks:{color:tc,font:{family:'Geist Mono',size:10},stepSize:2},grid:{color:gc}}}}});
   buildThemeClusters(entries);
-  }catch(err){console.error('Dashboard render error:',err);showDebug('RENDER ERROR: '+err.message+' | stack: '+err.stack?.slice(0,300));}
+  }catch(err){console.error('Dashboard render error:',err);
+);}
 }
 function updateRadar(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));buildRadar(entries[parseInt(document.getElementById('radarSelect').value)])}
 function buildRadar(entry){if(chartRadar)chartRadar.destroy();const tc='#5a5a72',gc='rgba(255,255,255,0.05)';chartRadar=new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Confidence','Objection H.','Delivery','Value Selling'],datasets:[{label:entry.series?`${entry.prospect} S${entry.session}`:entry.prospect,data:[entry.confidence,entry.objection,entry.delivery,entry.valuesell||0],borderColor:'#7c6dfa',backgroundColor:'rgba(124,109,250,0.14)',pointBackgroundColor:'#7c6dfa',pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{family:'Geist Mono',size:10},boxWidth:8}}},scales:{r:{min:0,max:10,ticks:{stepSize:2,color:tc,font:{size:9},backdropColor:'transparent'},grid:{color:gc},pointLabels:{color:'#9090a8',font:{family:'Geist Mono',size:10}},angleLines:{color:gc}}}}})}
@@ -412,21 +408,18 @@ function buildThemeClusters(entries){
 function renderLog(){const entries=getEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));if(!entries.length){document.getElementById('log-empty').style.display='block';document.getElementById('log-table-wrap').style.display='none';return}document.getElementById('log-empty').style.display='none';document.getElementById('log-table-wrap').style.display='block';document.getElementById('log-tbody').innerHTML=entries.map(e=>{const sc=e.series?`<span class="series-badge">${e.series}</span>`:'<span style="color:var(--text3);font-size:11px;">-</span>';const ss=e.series?`<div class="series-progress">${Array.from({length:e.total||1},(_,i)=>`<div class="sp-dot${i<e.session?' done':''}"></div>`).join('')}<span style="font-size:10px;color:var(--text3);margin-left:5px;">${e.session}/${e.total||1}</span></div>`:'<span style="color:var(--text3);font-size:11px;">-</span>';return`<tr><td><span style="font-family:'Geist Mono',monospace;font-size:11.5px;">${e.date}</span></td><td><strong>${e.prospect}</strong></td><td>${sc}</td><td>${ss}</td><td><span class="score-pill ${scoreClass(e.confidence)}">${e.confidence}</span></td><td><span class="score-pill ${scoreClass(e.objection)}">${e.objection}</span></td><td><span class="score-pill ${scoreClass(e.delivery)}">${e.delivery}</span></td><td><span class="score-pill ${scoreClass(e.valuesell||0)}">${e.valuesell||0}</span></td><td style="max-width:180px;font-size:11.5px;color:var(--text2);">${e.fix||'-'}</td><td><button class="del-btn" onclick="deleteEntry(${e.id})">&#10005;</button></td></tr>`}).join('')}
 function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveEntries(getEntries().filter(e=>e.id!==id));renderLog();renderDashboard()}
 function exportCSV(){const entries=getEntries().sort((a,b)=>new Date(a.date)-new Date(b.date));if(!entries.length){alert('No entries to export.');return}const header='Date,Prospect,Series,Session,TotalSessions,Confidence,Objection,Delivery,Tips,Strengths,Fix';const rows=entries.map(e=>[e.date,`"${e.prospect}"`,`"${e.series||''}"`,e.session||1,e.total||1,e.confidence,e.objection,e.delivery,`"${(e.tips||[]).join(' | ')}"`,`"${(e.strengths||[]).join(' | ')}"`,`"${e.fix||''}"`].join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv'}));a.download=`se-tracker-${new Date().toISOString().slice(0,10)}.csv`;a.click()}
-function showDebug(msg){
-  const p=document.getElementById('debug-panel');
-  const o=document.getElementById('debug-output');
-  if(p&&o){p.style.display='block';o.textContent+=msg+'\n';}
 }
 document.addEventListener('DOMContentLoaded',()=>{
   try{
     const raw=localStorage.getItem('se_tracker_v2')||localStorage.getItem('se_tracker_entries')||'[]';
-    showDebug('RAW STORE KEY se_tracker_v2: '+localStorage.getItem('se_tracker_v2')?.slice(0,120));
-    showDebug('RAW STORE KEY se_tracker_entries: '+localStorage.getItem('se_tracker_entries')?.slice(0,120));
-    showDebug('ALL localStorage keys: '+Object.keys(localStorage).join(', '));
+?.slice(0,120));
+?.slice(0,120));
+.join(', '));
     const parsed=JSON.parse(raw);
-    showDebug('Parsed entries count: '+parsed.length);
-    if(parsed.length>0){showDebug('First entry: '+JSON.stringify(parsed[0]).slice(0,200));}
-  }catch(e){showDebug('PARSE ERROR: '+e.message);}
+    if(parsed.length>0){
+.slice(0,200));}
+  }catch(e){
+}
 
   // Migrate old entries that may be missing newer fields
   const raw=getEntries();
