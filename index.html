@@ -319,44 +319,26 @@ function closeSetup(){document.getElementById('setup-modal').classList.remove('o
 let pendingEntry=null;
 
 function parseTrackerBlock(text){
-  const get=(pattern,fb='')=>{const m=text.match(pattern);return m?m[1].trim():fb;};
-  const date=get(/Call Date:\s*([^
-]+)/i);
-  const prospect=get(/Prospect:\s*([^
-]+)/i);
+  const get=(pat,fb)=>{fb=fb===undefined?'':fb;const m=text.match(pat);return m?m[1].trim():fb;};
+  const date=get(/Call Date:\s*([^\n]+)/i);
+  const prospect=get(/Prospect:\s*([^\n]+)/i);
   if(!date||!prospect) return null;
-  const series=get(/Series Name:\s*([^
-]+)/i,'');
-  const session=parseInt(get(/^Session:\s*([^
-]+)/im,'1'))||1;
-  const total=parseInt(get(/Total Sessions:\s*([^
-]+)/i,'1'))||1;
-  const confidence=parseFloat(get(/Confidence Score:\s*([^
-]+)/i))||0;
-  const objection=parseFloat(get(/Objection Handling Score:\s*([^
-]+)/i))||0;
-  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^
-]+)/i))||0;
-  const valuesell=parseFloat(get(/Value Selling\s*Score:\s*([^
-]+)/i))||0;
-  const tB=text.match(/Top 3 Coaching Tips:([\s\S]*?)(?:Strengths:|One thing to fix|$)/i);
-  const tips=tB?tB[1].split('
-').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
-  const sB=text.match(/Strengths:([\s\S]*?)(?:One thing to fix|$)/i);
-  const strengths=sB?sB[1].split('
-').map(l=>l.replace(/^\s*[-–]\s*/,'').trim()).filter(Boolean):[];
-  const fix=get(/One thing to fix[^:]*:\s*[-–]?\s*([^
-]+)/i);
-  return{
-    date,prospect,
-    series:series||'',session:session||1,total:total||1,
-    confidence:confidence||0,objection:objection||0,
-    delivery:delivery||0,valuesell:valuesell||0,
-    tips:tips||[],strengths:strengths||[],
-    fix:fix||'',id:Date.now()
-  };
+  const series=get(/Series Name:\s*([^\n]+)/i,'');
+  const session=parseInt(get(/Session:\s*([^\n]+)/im,'1'))||1;
+  const total=parseInt(get(/Total Sessions:\s*([^\n]+)/i,'1'))||1;
+  const confidence=parseFloat(get(/Confidence Score:\s*([^\n]+)/i,'0'))||0;
+  const objection=parseFloat(get(/Objection Handling Score:\s*([^\n]+)/i,'0'))||0;
+  const delivery=parseFloat(get(/Overall Delivery Rating:\s*([^\n]+)/i,'0'))||0;
+  const valuesell=parseFloat(get(/Value Selling\s*Score:\s*([^\n]+)/i,'0'))||0;
+  const tB=text.match(/Top 3 Coaching Tips:([\s\S]*?)(?=Strengths:|One thing to fix|$)/i);
+  const tips=tB?tB[1].split('\n').map(l=>l.replace(/^\s*\d+\.\s*/,'').trim()).filter(Boolean):[];
+  const sB=text.match(/Strengths:([\s\S]*?)(?=One thing to fix|$)/i);
+  const strengths=sB?sB[1].split('\n').map(l=>l.replace(/^\s*[-]\s*/,'').trim()).filter(Boolean):[];
+  const fix=get(/One thing to fix[^:]*:\s*-?\s*([^\n]+)/i);
+  return{date,prospect,series:series||'',session:session||1,total:total||1,
+    confidence:confidence||0,objection:objection||0,delivery:delivery||0,valuesell:valuesell||0,
+    tips:tips||[],strengths:strengths||[],fix:fix||'',id:Date.now()};
 }
-
 function parseInput(){
   const e=parseTrackerBlock(document.getElementById('pasteInput').value);
   if(!e){showAlert('error');return;}
